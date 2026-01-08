@@ -38,6 +38,7 @@ the dominant deterministic dynamics, and the stochastic effects inherent in expe
 Experimental Data Source
 
 The experimental measurements are obtained via DHM, as described in:
+
 [3] J. Orosco, W. Connacher, J. Friend
 [Identification of weakly to strongly-turbulent three-wave processes in a micro-scale system](https://www.sciencedirect.com/science/article/pii/S0960077923005167)<details><summary>BibTex</summary><pre>
 @article{orosco2023identification,
