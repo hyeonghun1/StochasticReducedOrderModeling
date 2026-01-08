@@ -1,0 +1,40 @@
+function [E, C, f1, f2] = estimate(f, Vr, x0, u, L)
+
+%Inputs -------------------------------
+% f: EulerMaruyamaStep function
+% f = @(x0, u, L) EulerMaruyamaStep(x0, u, L, E, A, B, N, M, h)  
+% Vr: POD basis of the total snapshot X (n x L x s)
+% x0: initial condition R^n
+% u: input R^s
+% L: number of noise samples
+
+%Outputs -------------------------------
+% E: mean of the reduced states R^{n x s}
+% C: covariance of the reduced states Vr*C*Vr^T (R^{n x n x s})
+% f1: second moment of X(end): ||X(end)||_2^2
+% f2: mean over n final values X(T)^3 * exp(X(T))
+%---------------------------------------
+
+% sample model (run L stochastic simulations starting from x0 with input u)
+X = stepSDE(f, x0, u, L);   % R^{n x L x s}
+
+% X = pagemtimes(Vr,stepSDE(f,x0,u,L));
+
+% Estimate quantities
+% Empirical mean over L noise realizations
+E_emp = reshape(mean(X,2), size(X,[1 3])); % R^{n x s}
+E = Vr * E_emp;  % mean R^{n x s}  
+
+% Empirical covariance 
+cov_emp = page_cov(X, true);
+
+C = pagemtimes( pagemtimes(Vr, cov_emp), Vr' );  % Vr*C*Vr^T (R^{n x n x s})
+
+X_T_recon = Vr * X(:,:,end);  % final state reconstruction for all L noises (R^{r x L})
+
+% Compute diagonostics to measure wack errors at the final time.
+f1 = mean(vecnorm(X_T_recon.^2));        
+f2 = mean(X_T_recon.^3./exp(X_T_recon), 'all');
+
+end
+

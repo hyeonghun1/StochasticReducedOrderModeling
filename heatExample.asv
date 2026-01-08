@@ -1,0 +1,63 @@
+function [E, A, B, N, M, f, n, m, h, s] = heatExample()
+    n = 100;
+    dx = 1/(n+1);
+    nx = [1:n]'*dx;
+    h = 1e-3;   % dt
+    mu = 0.1;
+	s = 1000;   % time steps
+
+    % identity on the left side
+    E = speye(n);
+
+    % discretise Laplace
+    A = mu*fd_laplace(n,dx);
+
+    % B models Dirichlet BC (forcing at the endpoints)
+    m = 1;
+    B = mu*[1; zeros(n-2,1); 1]/dx^2;
+    B = sparse(B);
+
+    % bilinear term
+    N =1*fd_advection(n,dx);
+
+    %Ndiag = -100*sin(10*pi*nx);
+    %N = spdiags(Ndiag,0,n,n);
+
+    % Wiener process is of dimension d=2
+    d = 2;
+
+    % spatial discretization of the noise
+    M = zeros(n,d);
+    M(:,1) = exp(-10*(nx-1/2).^2);  % first noise generating Wiener process
+    M(:,2) = sin(nx*2*pi);          % second noise generating Wiener process
+    M = 0.1*M;
+
+    % M = 20*M/norm(M);
+	% M = zeros(size(M));
+
+    % we use uncorrelated noise
+    % K = eye(d);
+
+    % drift implicit Euler-Maruyama
+    % f = @(x0,u,L) (E - h*A - h*N*u)\(x0 + h*B*u ...
+    %                                     + sqrt(h)*M*randn(size(M,2), L));
+    f = @(x0, u, L) EulerMaruyamaStep(x0, u, L, E, A, B, N, M, h);
+end
+
+function x_next = EulerMaruyamaStep(x0, u, L, E, A, B, N, M, h)
+    
+    % Deterministic term
+    Bu = B * u;
+    det_term = x0 + h*Bu;
+
+    % Stochastic term
+    xi = randn(size(M, 2), L);
+    % size(xi) - shape of (2, 1)
+    rand_term = sqrt(h) * M * xi;
+
+    % RHS
+    rhs = det_term + rand_term;
+
+    % Solve linear system
+    x_next = (E - h*A - h*N*u) \ rhs;
+end
