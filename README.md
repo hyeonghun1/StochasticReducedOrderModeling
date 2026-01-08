@@ -1,17 +1,7 @@
-# OperatorInference_for_SDEs
-This repository contains the MATLAB(2022a) implementation of operator inference (OpInf) approach for stochastic differential equations (SDEs) as described in:
+# StochasticReducedOrderModeling
+This repository contains a MATLAB (R2024b) implementation of the Operator Inference (OpInf) framework for stochastic differential equations (SDEs).
 
-[1] M. A. Freitag, J. M. Nicolaus, M. Redmann
- 	[Learning Stochastic Reduced Models from Data: A Nonintrusive Approach](https://doi.org/10.48550/arXiv.2407.05724)<details><summary>BibTex</summary><pre>
-@misc{freitag2024nonintrusivemodelorderreduction,
-      title={Nonintrusive model order reduction for stochastic differential equations}, 
-      author={M. A. Freitag and J. M. Nicolaus and M. Redmann},
-      year={2024},
-      eprint={2407.05724},
-      archivePrefix={arXiv},
-      primaryClass={math.NA},
-      url={https://arxiv.org/abs/2407.05724}, 
-}</pre></details>
+The implementation is based on and extends the methodology introduced in:
 
 [1] M. A. Freitag, J. M. Nicolaus, M. Redmann
  	[Learning Stochastic Reduced Models from Data: A Nonintrusive Approach](https://epubs.siam.org/doi/full/10.1137/24M1679756)<details><summary>BibTex</summary><pre>
@@ -26,4 +16,33 @@ This repository contains the MATLAB(2022a) implementation of operator inference 
   publisher={SIAM}
 }</pre></details>
 
-# StochasticReducedOrderModeling
+# Scope of This Repository
+Compared to the original stochastic OpInf implementation in [1], this repository extends the framework to experimental data. In particular, it applies stochastic operator inference to capillary wave turbulence data acquired using a custom ultra–high-speed (UHS) digital holographic microscope (DHM) [2].
+
+The goal is to learn reduced-order stochastic models that capture both:
+the dominant deterministic dynamics, and the stochastic effects inherent in experimental measurements.
+
+Experimental Data Source
+
+The experimental measurements are obtained via off-axis digital holography microscopy, as described in:
+
+[2] Y. Emery, T. Colomb, E. Cuche
+ [Metrology applications using off-axis digital holography microscopy]
+ (https://doi.org/10.1088/2515-7647/ac0957)
+Journal of Physics: Photonics, 3(3):034016, 2021.
+@article{emery2021metrology,
+  title={Metrology applications using off-axis digital holography microscopy},
+  author={Emery, Yves and Colomb, Tristan and Cuche, Etienne},
+  journal={Journal of Physics: Photonics},
+  volume={3},
+  number={3},
+  pages={034016},
+  year={2021},
+  publisher={IOP Publishing}
+}
+
+Requirements
+
+MATLAB R2024b (or newer recommended)
+
+Toolboxes as required by the OpInf implementation (see code comments)
