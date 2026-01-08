@@ -81,51 +81,10 @@ Qstate_c = cat(2, Q_split_c{:});
 Qstate_d = cat(2, Q_split_d{:});
 Qstate_e = cat(2, Q_split_e{:});
 
-% Qstate_a = cat(2, Q_stationary_a{:});
-% Qstate_b = cat(2, Q_stationary_b{:});
-% Qstate_c = cat(2, Q_stationary_c{:});
-% Qstate_d = cat(2, Q_stationary_d{:});
-% Qstate_e = cat(2, Q_stationary_e{:});
-
 clear Q_split_a Q_split_b Q_split_c Q_split_d Q_split_e
 
 
 %%
-% clear Q_stationary_a Q_stationary_b Q_stationary_c
-% clear Q_stationary_d Q_stationary_e
-
-%% plot both of the mean data
-[T, X] = meshgrid(tt, x);
-
-Z = cell(1,5);
-Z{1} = squeeze(mean(Qstate_a, 2));
-Z{2} = squeeze(mean(Qstate_b, 2));
-Z{3} = squeeze(mean(Qstate_c, 2));
-Z{4} = squeeze(mean(Qstate_d, 2));
-Z{5} = squeeze(mean(Qstate_e, 2));
-
-% Compute common color limits (exclude last if not plotting it)
-zmin = min([Z{1}(:); Z{2}(:); Z{3}(:); Z{4}(:); Z{5}(:)]);
-zmax = max([Z{1}(:); Z{2}(:); Z{3}(:); Z{4}(:); Z{5}(:)]);
-
-figure;
-tiledlayout(2, 3,'Padding','compact','TileSpacing','compact');
-
-for k = 1:5
-    ax = nexttile;
-    surf(ax, T, X, Z{k}, 'EdgeColor', 'none');
-    xlabel(ax,'Time [s]'); ylabel(ax,'x [\mum]');
-    zlabel(ax,'Surface displacement [\mum]');
-    xlim(ax,[0 0.06]); xticks(ax,0:0.01:0.05);
-    caxis(ax,[zmin zmax]);
-    view(ax,3);
-    colormap(ax, jet);
-    colorbar(ax);
-end
-
-
-%%
-% Qstate_all = cat(2, Qstate_a, Qstate_c);
 Qstate_all = cat(2, Qstate_a, Qstate_b, Qstate_c, Qstate_d, Qstate_e);
 
 clear Qstate_a Qstate_b Qstate_c Qstate_d Qstate_e
@@ -143,27 +102,27 @@ colorbar; colormap jet;
 
 
 %% FOM covariance
-CFOM = page_cov(Qstate_all, true);
+% CFOM = page_cov(Qstate_all, true);
 
 
 %% plot empirical covariance
 
-Nt = size(CFOM, 3);
-fps = 2000;
-pause_time = 1/fps;
-
-figure;
-im = imagesc(CFOM(:,:,1));
-colormap("jet");
-colorbar;
-caxis([min(CFOM(:)), max(CFOM(:))]);
-
-for kk=1:Nt
-    set(im, 'CData', CFOM(:,:,kk));
-    title(sprintf('FOM Covariance t = %.2e', t(kk)));
-    drawnow;
-    pause(pause_time);
-end
+% Nt = size(CFOM, 3);
+% fps = 2000;
+% pause_time = 1/fps;
+% 
+% figure;
+% im = imagesc(CFOM(:,:,1));
+% colormap("jet");
+% colorbar;
+% caxis([min(CFOM(:)), max(CFOM(:))]);
+% 
+% for kk=1:Nt
+%     set(im, 'CData', CFOM(:,:,kk));
+%     title(sprintf('FOM Covariance t = %.2e', t(kk)));
+%     drawnow;
+%     pause(pause_time);
+% end
 
 
 %% Get POD basis
