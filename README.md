@@ -13,6 +13,8 @@ This repository contains the MATLAB(2022a) implementation of operator inference 
       url={https://arxiv.org/abs/2407.05724}, 
 }</pre></details>
 
+[1] M. A. Freitag, J. M. Nicolaus, M. Redmann
+ 	[Learning Stochastic Reduced Models from Data: A Nonintrusive Approach](https://epubs.siam.org/doi/full/10.1137/24M1679756)<details><summary>BibTex</summary><pre>
 @article{freitag2025learning,
   title={Learning stochastic reduced models from data: A nonintrusive approach},
   author={Freitag, MA and Nicolaus, JM and Redmann, M},
@@ -22,6 +24,6 @@ This repository contains the MATLAB(2022a) implementation of operator inference 
   pages={A2851--A2880},
   year={2025},
   publisher={SIAM}
-}
+}</pre></details>
 
 # StochasticReducedOrderModeling
