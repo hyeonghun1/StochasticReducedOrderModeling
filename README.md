@@ -18,7 +18,7 @@ The implementation is based on and extends the methodology introduced in:
 
 **Scope of This Repository**
 
-Compared to the original stochastic OpInf implementation in [1], this repository extends the framework to experimental data. In particular, it applies stochastic operator inference to capillary wave turbulence data acquired using a custom ultra–high-speed (UHS) digital holographic microscope (DHM), as described in:
+Compared to the original stochastic OpInf implementation in [1] (see [relevant code](https://github.com/JMNicolaus/OperatorInference_for_SDEs)), this repository extends the framework to experimental data. In particular, it applies stochastic operator inference to capillary wave turbulence data acquired using a custom ultra–high-speed (UHS) digital holographic microscope (DHM), as described in:
 
 [2] Y. Emery, T. Colomb, E. Cuche
  [Metrology applications using off-axis digital holography microscopy](https://doi.org/10.1088/2515-7647/ac0957)<details><summary>BibTex</summary><pre>
