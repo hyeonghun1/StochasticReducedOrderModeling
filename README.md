@@ -28,8 +28,7 @@ The experimental measurements are obtained via off-axis digital holography micro
 
 [2] Y. Emery, T. Colomb, E. Cuche
  [Metrology applications using off-axis digital holography microscopy]
- (https://doi.org/10.1088/2515-7647/ac0957)
-Journal of Physics: Photonics, 3(3):034016, 2021.
+ (https://doi.org/10.1088/2515-7647/ac0957)<details><summary>BibTex</summary><pre>
 @article{emery2021metrology,
   title={Metrology applications using off-axis digital holography microscopy},
   author={Emery, Yves and Colomb, Tristan and Cuche, Etienne},
@@ -39,10 +38,9 @@ Journal of Physics: Photonics, 3(3):034016, 2021.
   pages={034016},
   year={2021},
   publisher={IOP Publishing}
-}
+}</pre></details>
 
 Requirements
 
 MATLAB R2024b (or newer recommended)
-
 Toolboxes as required by the OpInf implementation (see code comments)
