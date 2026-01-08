@@ -35,7 +35,7 @@ Compared to the original stochastic OpInf implementation in [1], this repository
 The goal is to learn reduced-order stochastic models that capture both:
 the dominant deterministic dynamics, and the stochastic effects inherent in experimental measurements.
 
-Experimental Data Source
+**Experimental Data Source**
 
 The experimental measurements are obtained via DHM, as described in:
 
@@ -52,7 +52,7 @@ The experimental measurements are obtained via DHM, as described in:
 }</pre></details>
 
 
-Requirements
+**Requirements**
 
 MATLAB R2024b (or newer recommended)
 
