@@ -17,14 +17,7 @@ The implementation is based on and extends the methodology introduced in:
 }</pre></details>
 
 # Scope of This Repository
-Compared to the original stochastic OpInf implementation in [1], this repository extends the framework to experimental data. In particular, it applies stochastic operator inference to capillary wave turbulence data acquired using a custom ultra–high-speed (UHS) digital holographic microscope (DHM) [2].
-
-The goal is to learn reduced-order stochastic models that capture both:
-the dominant deterministic dynamics, and the stochastic effects inherent in experimental measurements.
-
-Experimental Data Source
-
-The experimental measurements are obtained via off-axis digital holography microscopy, as described in:
+Compared to the original stochastic OpInf implementation in [1], this repository extends the framework to experimental data. In particular, it applies stochastic operator inference to capillary wave turbulence data acquired using a custom ultra–high-speed (UHS) digital holographic microscope (DHM), as described in:
 
 [2] Y. Emery, T. Colomb, E. Cuche
  [Metrology applications using off-axis digital holography microscopy]
@@ -39,6 +32,26 @@ The experimental measurements are obtained via off-axis digital holography micro
   year={2021},
   publisher={IOP Publishing}
 }</pre></details>
+
+The goal is to learn reduced-order stochastic models that capture both:
+the dominant deterministic dynamics, and the stochastic effects inherent in experimental measurements.
+
+Experimental Data Source
+
+The experimental measurements are obtained via DHM, as described in:
+[3] J. Orosco, W. Connacher, J. Friend
+[Identification of weakly to strongly-turbulent three-wave processes in a micro-scale system]
+(https://www.sciencedirect.com/science/article/pii/S0960077923005167)<details><summary>BibTex</summary><pre>
+@article{orosco2023identification,
+  title={Identification of weakly to strongly-turbulent three-wave processes in a micro-scale system},
+  author={Orosco, Jeremy and Connacher, William and Friend, James},
+  journal={Chaos, Solitons \& Fractals},
+  volume={172},
+  pages={113615},
+  year={2023},
+  publisher={Elsevier}
+}</pre></details>
+
 
 Requirements
 
