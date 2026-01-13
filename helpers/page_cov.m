@@ -2,7 +2,6 @@ function C = page_cov(x, transposePages)
 
 % Compute covariance pagewise.
 
-
 if transposePages
     x = pagetranspose(x);
 end

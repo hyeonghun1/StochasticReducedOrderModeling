@@ -19,7 +19,7 @@ Q_mean_c = squeeze(mean(Q_c, 2));
 Q_a = h5read(['/disk/hyk049/DHM_new_experiment/' ...
     'Q_subspace_0p10vpp_a.h5'], '/Q_subspace');
 Q_a = permute(Q_a, [3 2 1]);
-Q_mean_a = squeeze(mean(Q_a, 2));
+% Q_mean_a = squeeze(mean(Q_a, 2));
 
 %%
 Q_b = h5read(['/disk/hyk049/DHM_new_experiment/' ...
@@ -39,7 +39,7 @@ Q_e = permute(Q_e, [3 2 1]);
 
 %% Split data into temporally independent datasets
 split_size = 5760; % # of snapshots with
-% one segment og temporal independence
+% one segment of temporal independence
 
 num_segs = floor(size(Q_a, 3)/split_size);
 tt = t(1:split_size);
@@ -89,6 +89,8 @@ Qstate_all = cat(2, Qstate_a, Qstate_b, Qstate_c, Qstate_d, Qstate_e);
 
 clear Qstate_a Qstate_b Qstate_c Qstate_d Qstate_e
 
+%%
+% Qstate_all = permute(Qstate_all, [2 1 3]);
 
 %%
 [T, X] = meshgrid(tt, x);
@@ -213,37 +215,6 @@ ylabel('Normalized singular values', 'Interpreter','latex', 'FontSize', 15)
 grid on;
 
 
-%% Plot projections of original snapshot
-
-Vrtemp = Vrmax(:,1:1);
-Q_proj = Vrtemp * Vrtemp' * reshape(Qstate_all, nx, []);
-Q_proj = reshape(Q_proj, nx, size(Qstate_all, 2), size(Qstate_all, 3));
-
-%%
-figure;
-ax1 = subplot(1,2,1);
-s1 = surf(T, X, squeeze(mean(Qstate_all, 2)), 'EdgeColor', 'none');
-title('FOM')
-xlabel('Time [s]'); ylabel('x [\mum]');
-zlabel('Surface displacement [\mum]');
-xlim([0 0.06]); xticks(0:0.01:0.05);
-
-ax2 = subplot(1,2,2);
-s2 = surf(T, X, squeeze(mean(Q_proj, 2)), 'EdgeColor', 'none');
-title('ROM')
-xlabel('Time [s]'); ylabel('x [\mum]');
-xlim([0 0.06]); xticks(0:0.01:0.05);
-
-colormap(jet);
-
-clim = [min([s1.CData(:); s2.CData(:)]), ...
-        max([s1.CData(:); s2.CData(:)])];
-caxis(ax1, clim);
-caxis(ax2, clim);
-
-cb = colorbar;
-cb.Layout.Tile = 'south';  
-cb.Label.String = 'Surface displacement [\mum]';
 
 %% plot projections
 QFOM_mean = squeeze(mean(Qstate_all, 2));
@@ -294,56 +265,11 @@ cb.Layout.Tile = 'east';
 cb.Label.String = 'Surface displacement [\mum]';
 
 
-%% Plot projection errors
-% QFOM_mean = squeeze(mean(Qstate_all, 2));
-% r_list = [1 3 5 10 20];
-% 
-% figure('Color','w');
-% tile = tiledlayout(2, 3, 'TileSpacing','compact', 'Padding','compact');
-% 
-% ax(1) = nexttile;
-% axis(ax(1), 'off');
-% 
-% % Plot absolute errors
-% for k = 1:numel(r_list)
-%     r = r_list(k);
-% 
-%     Vrtemp = Vrmax(:,1:r);
-%     Q_proj = Vrtemp * (Vrtemp' * reshape(Qstate_all, nx, []));
-%     Q_proj = reshape(Q_proj, nx, size(Qstate_all,2), size(Qstate_all,3));
-% 
-%     QROM_mean = squeeze(mean(Q_proj,2));
-% 
-%     % Absolute error
-%     Qerr = abs(QFOM_mean - QROM_mean);
-% 
-%     ax(k+1) = nexttile;
-%     s(k+1) = surf(T, X, Qerr, 'EdgeColor','none');
-%     title(['|FOM − ROM|  (r = ' num2str(r) ')'])
-%     xlabel('Time [s]'); ylabel('x [\mum]');
-%     xlim([0 0.06]); xticks(0:0.01:0.05);
-%     view(2)
-% 
-%     clear Q_proj QROM_mean Qerr
-% end
-% 
-% colormap(parula)
-% errC = vertcat(s(2:end).CData);
-% clim = [0, max(errC(:))];   % absolute error ≥ 0
-% set(ax(2:end), 'CLim', clim)
-% 
-% cb = colorbar;
-% cb.Layout.Tile = 'east';
-% cb.Label.String = '|Surface displacement error| [\mum]';
-
-
 
 %% OpInf
 
 % max r value
 rmax = 20;
-
-% seed_test = 42;
 
 s = size(Qstate_all, 3);
 L = size(Qstate_all, 2);
@@ -362,27 +288,32 @@ f2FOM = mean(Q_T.^3./exp(Q_T), 'all');
 EROM = cell(1,rmax); CROM = cell(1,rmax);
 f1ROM = zeros(1,rmax); f2ROM = zeros(1,rmax);
 
-E_error = zeros(1,rmax); C_error = zeros(1,rmax);
+E_error = cell(1,rmax); C_error = zeros(1,rmax);
 f1_error = zeros(1,rmax); f2_error = zeros(1,rmax);
 
-%%
+
+%% Test generating fractal Brownian motion
 % rng default
-h = 0.01;
+H = 0.01;
 l = 17000;
 
 figure;
-fBm03 = wfbm(h,l,'plot');
+fBm_temp = wfbm(H, l, 'plot');
 
-%%
-load('fGn_data.mat')
-H = 0.6;
 
-d_all = zeros(1, rmax);
+%% Train ROM
 
-for ii = 2:rmax
-% ii=2;
+H = 0.50;  % Hurst exponent
+fGn_all = cell(1, 20);
+
+seed_test = 42;
+doReg = true;
+reg1 = logspace(-2, 5, 15);
+
+for ii = 1:rmax
+
     disp("ROM dimension " + ii)
-    % rng(seed_test)
+    rng(seed_test)
 
     Vr_temp = V(:, 1:ii);
     
@@ -396,38 +327,53 @@ for ii = 2:rmax
     % covariance of reduced states
     C_train = page_cov(Q_train_temp, true);
     
+    for j=1:length(reg1)
     % Drift OpInf
-    [Ehatr, Ahatr, Nhatr] = infer_drift(E_train, h, isbilinear, s);
+    [Ehatr, Ahatr, Nhatr] = infer_drift(E_train, h, isbilinear, s, reg1(j));
     
     % Diffusion OpInf
     [Mhatr, Khatr] = infer_diffusion(C_train, h, Ahatr, Nhatr);
 
-    d_all(ii) = size(Mhatr, 2);
-
     % ROM initial consdtion
     xr0 = Vr_temp' * EFOM(:,1);
 
-    % ROM function
-    % fhatr = @(x0, L) ...
-    %     (Ehatr - h*Ahatr) \ ...
-    %     (x0 + sqrt(h)*Mhatr*randn(size(Mhatr,2), L)) ;
+    d_temp = size(Mhatr,2);
 
+    % % ROM function using Wiener process
+    Wiener_noise = randn(d_temp, L);
     fhatr = @(x0, L) ...
-        (Ehatr - h*Ahatr) \ (x0 + (h^H)*Mhatr*fGn_all{ii}) ;
+        (Ehatr - h*Ahatr) \ (x0 + sqrt(h)*Mhatr*Wiener_noise) ;
+
+    % Pre-generate fractal Gaussian noise
+    % fGn_temp = zeros(d_temp, L);
+    % if d_temp > 0
+    %     for j = 1:d_temp
+    %         fBm = wfbm(H, L+1);
+    %         fGn_temp(j,:) = diff(fBm);
+    %         fGn_all{ii} = fGn_temp;
+    %     end
+    % end
+    % 
+    % fhatr = @(x0, L) ...
+    %     (Ehatr - h*Ahatr) \ (x0 + (h^H)*Mhatr*fGn_temp) ;
 
     % ROM simulation w/ testing I.C.
     [Eopinf, Copinf, f1opinf, f2opinf] = estimate(fhatr, Vr_temp, xr0, s, L);
 
-    EROM{ii} = Eopinf;   CROM{ii} = Copinf;
+    EROM_recon = Vr_temp*Eopinf;
+
+    EROM{ii} = EROM_recon;   CROM{ii} = Copinf;
     f1ROM(ii) = f1opinf; f2ROM(ii) = f2opinf;
-    % E_error(ii) = norm(EFOM - Eopinf, "fro") / norm(EFOM, "fro");
+
+    E_err = norm(EFOM - EROM_recon, "fro") / norm(EFOM, "fro");
+    E_error{ii} = [E_error{ii}, E_err];
     % C_error(ii) = page_norm(Copinf - CFOM) / page_norm(CFOM);
-    E_error(ii) = norm(E_train - Eopinf, "fro") / norm(E_train, "fro");
+    % E_error(ii) = norm(E_train - Eopinf, "fro") / norm(E_train, "fro");
     C_error(ii) = page_norm(C_train - Copinf) / page_norm(C_train);
     f1_error(ii) = abs(f1opinf - f1FOM) / abs(f1FOM);
     f2_error(ii) = abs(f2opinf - f2FOM) / abs(f2FOM);
+    end
 end
-
 
 error.E_error = E_error;
 error.C_error = C_error;
@@ -441,7 +387,7 @@ r = linspace(1, rmax, rmax);
 
 figure;
 % expectation
-subplot(2,2,1)
+subplot(1,2,1)
 plot(r, error.E_error, '-o', 'linewidth', 1.5); hold on;
 scatter(r, error.E_error, 40, [0 0.45 0.74], 'filled');
 set(gca, 'YScale', 'log')
@@ -450,7 +396,7 @@ axis([1 rmax min(E_error)*0.9 max(E_error)*1.1])
 grid on
 
 % Covariance
-subplot(2,2,2)
+subplot(1,2,2)
 plot(r, error.C_error, '-o', 'LineWidth', 1.5); hold on;
 scatter(r, error.C_error, 40, [0 0.45 0.74], 'filled');
 set(gca, 'YScale', 'log')
@@ -458,31 +404,112 @@ title("Covariance error")
 axis([1 rmax min(C_error)*0.9 max(C_error)*1.1])
 grid on
 
-% f1
-subplot(2,2,3)
-plot(r, error.f1_error, '-o', 'LineWidth', 1.5); hold on;
-scatter(r, error.f1_error, 40, [0 0.45 0.74], 'filled');
-set(gca, 'YScale', 'log')
-title("f1")
-axis([1 rmax min(f1_error)*0.9 max(f1_error)*1.1])
-grid on
+% % f1
+% subplot(2,2,3)
+% plot(r, error.f1_error, '-o', 'LineWidth', 1.5); hold on;
+% scatter(r, error.f1_error, 40, [0 0.45 0.74], 'filled');
+% set(gca, 'YScale', 'log')
+% title("f1")
+% axis([1 rmax min(f1_error)*0.9 max(f1_error)*1.1])
+% grid on
+% 
+% % f2
+% subplot(2,2,4)
+% plot(r, error.f2_error, '-o', 'LineWidth', 1.5); hold on;
+% scatter(r, error.f2_error, 40, [0 0.45 0.74], 'filled');
+% set(gca, 'YScale', 'log')
+% title("f2")
+% axis([1 rmax min(f2_error)*0.9 max(f2_error)*1.1])
+% grid on
 
-% f2
-subplot(2,2,4)
-plot(r, error.f2_error, '-o', 'LineWidth', 1.5); hold on;
-scatter(r, error.f2_error, 40, [0 0.45 0.74], 'filled');
-set(gca, 'YScale', 'log')
-title("f2")
-axis([1 rmax min(f2_error)*0.9 max(f2_error)*1.1])
-grid on
 
+%%
+[r_grid, reg_grid] = meshgrid((1:20), reg1);
+
+E_error_array = cell2mat(E_error(:))';
+figure('Color','w')
+% scatter(repelem(1:20, 15), E_error_array(:));
+surf(r_grid, reg_grid, E_error_array, 'EdgeColor','none')
+% view(2)
+set(gca, 'YScale', 'log'); set(gca, 'ZScale', 'log');
+colormap(hot)
+set(gca, 'ColorScale','log')
+colorbar
+
+xlabel('Reduced dimension r')
+ylabel('$\lambda_1$', 'Interpreter','latex')
+zlabel('Relative ROM error')
+
+
+%%
+[r_min, idx_min] = min(cellfun(@min, E_error))
+
+%%
+r_opt = 14;
+[r_min, idx_min] = min(E_error{r_opt})
+
+
+%% ROM simulation w/ optimal r & regularizer
+
+rr = 14;
+reg_idx = 12;
+
+Vr_temp = V(:, 1:rr);
+    
+% Project the FOM observations
+Q_train_temp = pagemtimes(Vr_temp', Qstate_all);  % R^{r x L x s}
+
+% Estimate mean/covariance of the reduced observations
+% mean of reduced states across L realizations
+E_train = reshape(squeeze(mean(Q_train_temp, 2)), rr, s);
+
+% covariance of reduced states
+C_train = page_cov(Q_train_temp, true);
+
+% Drift OpInf
+[Ehatr, Ahatr, Nhatr] = infer_drift(E_train, h, isbilinear, s, reg1(reg_idx));
+
+% Diffusion OpInf
+[Mhatr, Khatr] = infer_diffusion(C_train, h, Ahatr, Nhatr);
+
+% ROM initial consdtion
+xr0 = Vr_temp' * EFOM(:,1);
+
+d_temp = size(Mhatr,2);
+
+% % ROM function using Wiener process
+Wiener_noise = randn(d_temp, L);
+fhatr = @(x0, L) ...
+    (Ehatr - h*Ahatr) \ (x0 + sqrt(h)*Mhatr*Wiener_noise) ;
+
+% Pre-generate fractal Gaussian noise
+% fGn_temp = zeros(d_temp, L);
+% if d_temp > 0
+%     for j = 1:d_temp
+%         fBm = wfbm(H, L+1);
+%         fGn_temp(j,:) = diff(fBm);
+%         fGn_all{ii} = fGn_temp;
+%     end
+% end
+% 
+% fhatr = @(x0, L) ...
+%     (Ehatr - h*Ahatr) \ (x0 + (h^H)*Mhatr*fGn_temp) ;
+
+% ROM simulation w/ testing I.C.
+[Eopinf, Copinf, f1opinf, f2opinf] = estimate(fhatr, Vr_temp, xr0, s, L);
+
+EROM_recon = Vr_temp*Eopinf;
 
 
 %%
 [TT, X] = meshgrid(tt, x);
 
-r_opt = 9;
-EROM_opt = Vrmax(:,1:r_opt)*EROM{r_opt}; 
+% r_opt = 10;
+% EROM_opt = V(:,1:r_opt)*EROM{r_opt}; 
+
+% EROM_opt = EROM{r_opt};
+
+ERPM_opt = EROM_recon;
 
 figure('Color','w');
 tile = tiledlayout(2,3,'Padding','compact','TileSpacing','compact');
@@ -546,21 +573,7 @@ zlabel(ax6,"Relative error (%)");
 xlim(ax6,[0,0.06]); xticks(ax6,0:0.01:0.05);
 colorbar(ax6); colormap(ax6, hot);
 
-
-%% Fractal Brownian motion (fBm)
-
-H = 0.75;      % Hurst exponent
-N = 2^14;      % number of time steps
-
-fbm = fbm_daviesharte(H, N);
-
-t = linspace(0, 1, N);
-plot(t, fbm, 'LineWidth', 1.2)
-xlabel('t'), ylabel('B_H(t)')
-title(['Fractional Brownian Motion, H = ', num2str(H)])
-grid on
-
-
+title(tile, sprintf("$r=%d$", r_opt), 'interpreter', 'latex');
 
 
 %% PSDs of all the samples
@@ -625,15 +638,3 @@ function [stationary, drift] = decompose_LPF(x, fs, fc)
     % Stationary = original - drift
     stationary = x - drift;
 end
-
-function fbm = fbm_daviesharte(H, N)
-    k = 0:N-1;
-    r = 0.5*((k+1).^(2*H) - 2*k.^(2*H) + abs(k-1).^(2*H));
-    r = [r 0 r(end:-1:2)];
-    lambda = real(fft(r));
-    W = sqrt(lambda/length(lambda)) .* ...
-        (randn(size(lambda)) + 1i*randn(size(lambda)));
-    fgn = real(ifft(W));
-    fbm = cumsum(fgn(1:N));
-end
-

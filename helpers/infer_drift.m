@@ -1,10 +1,11 @@
-function [Ehat,Ahat,Bhat,Nhat] = infer_drift(E_train, u_train, h, isbilinear, s)
+function [Ehat,Ahat,Nhat] = infer_drift(E_train, h, isbilinear, s, reg)
 
 %Inputs--------------------------
-% E_train: each cell contains the expected value of the reduced states
+% E_train: Expected value of the reduced states across samples R^{r x s}
 % E_r(t) = E[Vr^T X(t)]
 % u_train: input matrix 
 % h: dt
+% doReg: logical (true/false) for regularization
 
 %Outputs--------------------------
 % Ehat: mass matrix
@@ -13,47 +14,63 @@ function [Ehat,Ahat,Bhat,Nhat] = infer_drift(E_train, u_train, h, isbilinear, s)
 % Nhat: Nr_hat (bilinear reduced operator)
 %---------------------------------
 
-r = size(E_train{1}(:,1), 1);
+r = size(E_train, 1);
 D = [];
 rhs = [];
-m = size(u_train{1}, 1);
-p = numel(E_train);
 
-for ii=1:p
-  % central finite difference quotient of accuracy 2 along dimension 2
-  [Er, Er_dot, ind] = central_finite_differences(E_train{ii}, h, 2, 2);
-  u = u_train{ii};
+% m = size(u_train{1}, 1);
+% p = numel(E_train);
 
-  for jj=1:min(numel(ind), s)
+% central finite difference quotient of accuracy 2 along dimension 2
+[Er, Er_dot, ind] = central_finite_differences(E_train, h, 2, 2);
+
+% u = u_train{ii};
+
+for jj=1:min(numel(ind), s)
+    % disp(jj)
+
     if isbilinear
       % system has bilinear term
-      D_new = [D, [Er(:,jj); u(:,jj); kron(u(:,jj), Er(:,jj))]];
+      D_new = [D, [Er(:,jj); u(:,jj) kron(u(:,jj), Er(:,jj))] ];
     else
       % system does not have a bilinear term
-      D_new = [D, [Er(:,jj); u(:,jj)]];
+      D_new = [D, [Er(:,jj)]];
     end
 
-    if ii<2 %r+m
+    % if ii<2 %r+m
         % use full trajectories
         D = D_new;
-    else
+    % else
         % only use this time point if it reduces the condition number
-        if cond(D_new) < cond(D)
-            D = D_new;
-        else
-            continue
-        end
-    end
+    %     if cond(D_new) < cond(D)
+    %         D = D_new;
+    %     else
+    %         continue
+    %     end
+    % end
+
     rhs = [rhs, Er_dot(:,jj)];
-  end
 end
+
 disp("cond(D) = " + cond(D))
 
 
-% Solve least-squares problem
-ops = rhs/D;
-Ahat = ops(1:r, 1:r);
-Bhat = ops(:, r+1:r+m);
+if exist('lambda', 'var') && ~isempty(reg)
+    % Get regularization matrix
+    Gamma = regularizer(r, reg);
+    
+    % Solve regulairzed least-squares problem
+    D_modified = D'*D + Gamma'*Gamma;
+    rhs_modified = D' * R';
+    ops = rhs_modified/D_modified;
+    Ahat = ops(1:r, 1:r);
+else
+    % Non-regularized least-squares problem
+    ops = rhs/D;
+    Ahat = ops(1:r, 1:r);
+    % Bhat = ops(:, r+1:r+m);
+end
+
 if isbilinear
     Nhat = ops(:, r+m+1:end);
 else 
