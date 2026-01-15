@@ -1,7 +1,7 @@
 clc; clear;
 
-%%
-Q_c = h5read(['/disk/hyk049/DHM_new_experiment/' ...
+%% Load five datasets
+Q_a = h5read(['/disk/hyk049/DHM_new_experiment/' ...
     'Q_subspace_0p10vpp_c.h5'], '/Q_subspace');
 
 t = h5read('/disk/hyk049/DHM_new_experiment/Q_subspace_0p18vpp.h5', '/t');
@@ -10,42 +10,66 @@ y = h5read('/disk/hyk049/DHM_new_experiment/Q_subspace_0p18vpp.h5', '/y');
 
 t = double(t); x = double(x); y = double(y);
 
-Q_c = permute(Q_c, [3 2 1]);
+nx = length(x);  Nt = length(t);
 
-Q_mean_c = squeeze(mean(Q_c, 2));
-[nx, Nt] = size(Q_mean_c);
-
-%%
-Q_a = h5read(['/disk/hyk049/DHM_new_experiment/' ...
-    'Q_subspace_0p10vpp_a.h5'], '/Q_subspace');
-Q_a = permute(Q_a, [3 2 1]);
-% Q_mean_a = squeeze(mean(Q_a, 2));
-
-%%
 Q_b = h5read(['/disk/hyk049/DHM_new_experiment/' ...
     'Q_subspace_0p10vpp_b.h5'], '/Q_subspace');
-Q_b = permute(Q_b, [3 2 1]);
-
-%%
+Q_c = h5read(['/disk/hyk049/DHM_new_experiment/' ...
+    'Q_subspace_0p10vpp_c.h5'], '/Q_subspace');
 Q_d = h5read(['/disk/hyk049/DHM_new_experiment/' ...
     'Q_subspace_0p10vpp_d.h5'], '/Q_subspace');
-Q_d = permute(Q_d, [3 2 1]);
-
-%%
 Q_e = h5read(['/disk/hyk049/DHM_new_experiment/' ...
     'Q_subspace_0p10vpp_e.h5'], '/Q_subspace');
+
+Q_a = permute(Q_a, [3 2 1]);
+Q_b = permute(Q_b, [3 2 1]);
+Q_c = permute(Q_c, [3 2 1]);
+Q_d = permute(Q_d, [3 2 1]);
 Q_e = permute(Q_e, [3 2 1]);
+
+
+%% Load 1D data (should be quick)
+
+t = h5read(['/disk/hyk049/DHM_new_1Dcenter/' ...
+    'Q_1D_0p10vpp_a.h5'], '/t')';
+x = h5read(['/disk/hyk049/DHM_new_1Dcenter/' ...
+    'Q_1D_0p10vpp_a.h5'], '/x')';
+nx = length(x);
+
+Q_a_1D = h5read(['/disk/hyk049/DHM_new_1Dcenter/' ...
+    'Q_1D_0p10vpp_a.h5'], '/Q_1D')';
+Q_b_1D = h5read(['/disk/hyk049/DHM_new_1Dcenter/' ...
+    'Q_1D_0p10vpp_b.h5'], '/Q_1D')';
+Q_c_1D = h5read(['/disk/hyk049/DHM_new_1Dcenter/' ...
+    'Q_1D_0p10vpp_c.h5'], '/Q_1D')';
+Q_d_1D = h5read(['/disk/hyk049/DHM_new_1Dcenter/' ...
+    'Q_1D_0p10vpp_d.h5'], '/Q_1D')';
+Q_e_1D = h5read(['/disk/hyk049/DHM_new_1Dcenter/' ...
+    'Q_1D_0p10vpp_e.h5'], '/Q_1D')';
+Q_f_1D = h5read(['/disk/hyk049/DHM_new_1Dcenter/' ...
+    'Q_1D_0p10vpp_f.h5'], '/Q_1D')';
+Q_h_1D = h5read(['/disk/hyk049/DHM_new_1Dcenter/' ...
+    'Q_1D_0p10vpp_h.h5'], '/Q_1D')';
+Q_i_1D = h5read(['/disk/hyk049/DHM_new_1Dcenter/' ...
+    'Q_1D_0p10vpp_i.h5'], '/Q_1D')';
+Q_j_1D = h5read(['/disk/hyk049/DHM_new_1Dcenter/' ...
+    'Q_1D_0p10vpp_j.h5'], '/Q_1D')';
+Q_k_1D = h5read(['/disk/hyk049/DHM_new_1Dcenter/' ...
+    'Q_1D_0p10vpp_k.h5'], '/Q_1D')';
 
 
 %% Split data into temporally independent datasets
 split_size = 5760; % # of snapshots with
 % one segment of temporal independence
 
+% loc = 100;
+
 num_segs = floor(size(Q_a, 3)/split_size);
 tt = t(1:split_size);
 
 Q_split_a = cell(1, num_segs);
 Q_all_a = Q_a(:,:,1:split_size*num_segs);
+% Q_all_a = Q_a(:,loc,1:split_size*num_segs);
 
 Q_split_b = cell(1, num_segs);
 Q_all_b = Q_b(:,:,1:split_size*num_segs);
@@ -70,6 +94,7 @@ for k=1:num_segs
     Q_split_e{k} = Q_all_e(:, :, idx_start:idx_end);
 end
 
+%%
 clear Q_all_a Q_all_b Q_all_c Q_all_d Q_all_e 
 clear Q_a Q_b Q_c Q_d Q_e
 
@@ -83,9 +108,82 @@ Qstate_e = cat(2, Q_split_e{:});
 
 clear Q_split_a Q_split_b Q_split_c Q_split_d Q_split_e
 
+%% 10 datasets centerline case
+
+split_size = 5760; % # of snapshots with
+% one segment of temporal independence
+
+num_segs = floor(length(t)/split_size);
+tt = t(1:split_size);
+
+Q_split_a = cell(1, num_segs);
+Q_split_b = cell(1, num_segs);
+Q_split_c = cell(1, num_segs);
+Q_split_d = cell(1, num_segs);
+Q_split_e = cell(1, num_segs);
+Q_split_f = cell(1, num_segs);
+Q_split_h = cell(1, num_segs);
+Q_split_i = cell(1, num_segs);
+Q_split_j = cell(1, num_segs);
+Q_split_k = cell(1, num_segs);
+
+Q_all_a = Q_a_1D(:,1:split_size*num_segs);
+Q_all_b = Q_b_1D(:,1:split_size*num_segs);
+Q_all_c = Q_c_1D(:,1:split_size*num_segs);
+Q_all_d = Q_d_1D(:,1:split_size*num_segs);
+Q_all_e = Q_e_1D(:,1:split_size*num_segs);
+Q_all_f = Q_f_1D(:,1:split_size*num_segs);
+Q_all_h = Q_h_1D(:,1:split_size*num_segs);
+Q_all_i = Q_i_1D(:,1:split_size*num_segs);
+Q_all_j = Q_j_1D(:,1:split_size*num_segs);
+Q_all_k = Q_k_1D(:,1:split_size*num_segs);
+
+for k=1:num_segs
+    idx_start = (k-1)*split_size + 1;
+    idx_end = k*split_size;
+
+    Q_split_a{k} = Q_all_a(:, idx_start:idx_end);
+    Q_split_b{k} = Q_all_b(:, idx_start:idx_end);
+    Q_split_c{k} = Q_all_c(:, idx_start:idx_end);
+    Q_split_d{k} = Q_all_d(:, idx_start:idx_end);
+    Q_split_e{k} = Q_all_e(:, idx_start:idx_end);
+    Q_split_f{k} = Q_all_f(:, idx_start:idx_end);
+    Q_split_h{k} = Q_all_h(:, idx_start:idx_end);
+    Q_split_i{k} = Q_all_i(:, idx_start:idx_end);
+    Q_split_j{k} = Q_all_j(:, idx_start:idx_end);
+    Q_split_k{k} = Q_all_k(:, idx_start:idx_end);
+end
+
+Qstate_a = zeros(200, 17, 5760);
+Qstate_b = zeros(200, 17, 5760);
+Qstate_c = zeros(200, 17, 5760);
+Qstate_d = zeros(200, 17, 5760);
+Qstate_e = zeros(200, 17, 5760);
+Qstate_f = zeros(200, 17, 5760);
+Qstate_h = zeros(200, 17, 5760);
+Qstate_i = zeros(200, 17, 5760);
+Qstate_j = zeros(200, 17, 5760);
+Qstate_k = zeros(200, 17, 5760);
+for i=1:17
+    Qstate_a(:,i,:) = Q_split_a{i};
+    Qstate_b(:,i,:) = Q_split_b{i};
+    Qstate_c(:,i,:) = Q_split_c{i};
+    Qstate_d(:,i,:) = Q_split_d{i};
+    Qstate_e(:,i,:) = Q_split_e{i};
+    Qstate_f(:,i,:) = Q_split_f{i};
+    Qstate_h(:,i,:) = Q_split_h{i};
+    Qstate_i(:,i,:) = Q_split_i{i};
+    Qstate_j(:,i,:) = Q_split_j{i};
+    Qstate_k(:,i,:) = Q_split_k{i};
+end
+
+
 
 %%
 Qstate_all = cat(2, Qstate_a, Qstate_b, Qstate_c, Qstate_d, Qstate_e);
+
+% Qstate_all = cat(2, Qstate_a, Qstate_b, Qstate_c, Qstate_d, Qstate_e, ...
+                % Qstate_f, Qstate_h, Qstate_i, Qstate_j, Qstate_k);
 
 clear Qstate_a Qstate_b Qstate_c Qstate_d Qstate_e
 
@@ -288,22 +386,106 @@ f2FOM = mean(Q_T.^3./exp(Q_T), 'all');
 EROM = cell(1,rmax); CROM = cell(1,rmax);
 f1ROM = zeros(1,rmax); f2ROM = zeros(1,rmax);
 
-E_error = cell(1,rmax); C_error = zeros(1,rmax);
+% E_error = cell(1,rmax);
+E_error = zeros(1,rmax);
+
+C_error = zeros(1,rmax);
 f1_error = zeros(1,rmax); f2_error = zeros(1,rmax);
 
 
 %% Test generating fractal Brownian motion
 % rng default
-H = 0.01;
+H = 0.35;
 l = 17000;
 
 figure;
 fBm_temp = wfbm(H, l, 'plot');
+fGn = diff(fBm_temp);
+
+figure;
+plot(fGn);
+
+[acf, lags] = xcorr(fGn, length(fGn));
+acf = acf / max(acf);
+
+pos_idx = lags >= 0;
+lags = lags(pos_idx);
+acf = acf(pos_idx); 
+
+figure;
+scatter(lags, acf, 'filled')
+xlabel('Lag')
+ylabel('Autocorrelation')
+title('Autocorrelation Function')
+grid on
+
+%%
+signal = EFOM(100,:);
+signal = detrend(signal);      % remove linear trend
+
+[acf, lags] = xcorr(signal, length(signal), 'coeff');
+pos_idx = lags >= 1;          % ignore lag 0
+lags = lags(pos_idx);
+acf = acf(pos_idx);
+
+% % fit log-log to estimate H (slope = 2H-2)
+% p = polyfit(log(lags(:)), log(acf_smooth(:)), 1);
+% H_est = (1 + p(1))/2;
+
+valid_idx = acf > 0;
+lags_fit = lags(valid_idx);
+acf_fit  = acf(valid_idx);
+
+p_coeff = polyfit(log(lags_fit), log(acf_fit), 1);
+H_est = (1 + p_coeff(1))/2;
+
+disp(['Estimated Hurst exponent: ', num2str(H_est)])
+
+acf_fit_curve = exp(p_coeff(2)) * lags_fit.^p_coeff(1);
+
+figure;
+scatter(lags, acf, 'filled'); hold on;
+% plot(lags_fit, acf_fit_curve, 'r', 'LineWidth',2);
+xlabel('Lag')
+ylabel('Autocorrelation')
+title('Autocorrelation Function')
+legend('ACF', 'Power-law fit')
+grid on
+
+
+
+%% Autocorrelation
+
+% EFOM_mean = mean(EFOM, 1);
+
+[acf, lags] = xcorr(detrend(EFOM(50,:)), 5760, 'coeff');
+pos_idx = lags >= 0;
+lags = lags(pos_idx);
+acf = acf(pos_idx); 
+
+figure;
+scatter(lags, acf, 'filled')
+xlabel('Lag')
+ylabel('Autocorrelation')
+title('Autocorrelation Function')
+grid on
+
+%%
+[acf, lags] = xcorr(EFOM_no_mean(100,:), 200, 'coeff');
+lags = lags(lags >= 0);
+acf  = acf(lags >= 0);
+
+figure;
+scatter(lags, acf, 'filled')
+xlabel('Lag')
+ylabel('Autocorrelation')
+title('Autocorrelation Function')
+grid on
 
 
 %% Train ROM
 
-H = 0.50;  % Hurst exponent
+H = 0.35;  % Hurst exponent
 fGn_all = cell(1, 20);
 
 seed_test = 42;
@@ -327,9 +509,11 @@ for ii = 1:rmax
     % covariance of reduced states
     C_train = page_cov(Q_train_temp, true);
     
-    for j=1:length(reg1)
+    % for j=1:length(reg1)
+
     % Drift OpInf
-    [Ehatr, Ahatr, Nhatr] = infer_drift(E_train, h, isbilinear, s, reg1(j));
+    % [Ehatr, Ahatr, Nhatr] = infer_drift(E_train, h, isbilinear, s, reg1(j));
+    [Ehatr, Ahatr, Nhatr] = infer_drift(E_train, h, isbilinear, s);
     
     % Diffusion OpInf
     [Mhatr, Khatr] = infer_diffusion(C_train, h, Ahatr, Nhatr);
@@ -337,26 +521,16 @@ for ii = 1:rmax
     % ROM initial consdtion
     xr0 = Vr_temp' * EFOM(:,1);
 
-    d_temp = size(Mhatr,2);
-
-    % % ROM function using Wiener process
-    Wiener_noise = randn(d_temp, L);
+    % ROM function using Wiener process
     fhatr = @(x0, L) ...
-        (Ehatr - h*Ahatr) \ (x0 + sqrt(h)*Mhatr*Wiener_noise) ;
+        (Ehatr - h*Ahatr) \ ... 
+        (x0 + sqrt(h)*Mhatr*randn(size(Mhatr,2), L)) ;
 
-    % Pre-generate fractal Gaussian noise
-    % fGn_temp = zeros(d_temp, L);
-    % if d_temp > 0
-    %     for j = 1:d_temp
-    %         fBm = wfbm(H, L+1);
-    %         fGn_temp(j,:) = diff(fBm);
-    %         fGn_all{ii} = fGn_temp;
-    %     end
-    % end
-    % 
+    % ROM function using fractal Gaussian noise
     % fhatr = @(x0, L) ...
-    %     (Ehatr - h*Ahatr) \ (x0 + (h^H)*Mhatr*fGn_temp) ;
-
+    %     (Ehatr - h*Ahatr) \ ...
+    %     (x0 + Mhatr*generate_fGn(size(Mhatr,2), L, h, H));
+   
     % ROM simulation w/ testing I.C.
     [Eopinf, Copinf, f1opinf, f2opinf] = estimate(fhatr, Vr_temp, xr0, s, L);
 
@@ -365,14 +539,18 @@ for ii = 1:rmax
     EROM{ii} = EROM_recon;   CROM{ii} = Copinf;
     f1ROM(ii) = f1opinf; f2ROM(ii) = f2opinf;
 
-    E_err = norm(EFOM - EROM_recon, "fro") / norm(EFOM, "fro");
-    E_error{ii} = [E_error{ii}, E_err];
+    E_error(ii) = norm(E_train - Eopinf, "fro") / norm(E_train, "fro");
+    % E_err = norm(EFOM - EROM_recon, "fro") / norm(EFOM, "fro");
+    % E_error{ii} = [E_error{ii}, E_err];
+
+    % E_error(ii) = E_err;
+
     % C_error(ii) = page_norm(Copinf - CFOM) / page_norm(CFOM);
-    % E_error(ii) = norm(E_train - Eopinf, "fro") / norm(E_train, "fro");
+
     C_error(ii) = page_norm(C_train - Copinf) / page_norm(C_train);
     f1_error(ii) = abs(f1opinf - f1FOM) / abs(f1FOM);
     f2_error(ii) = abs(f2opinf - f2FOM) / abs(f2FOM);
-    end
+    % end
 end
 
 error.E_error = E_error;
@@ -381,12 +559,152 @@ error.f1_error = f1_error;
 error.f2_error = f2_error;
 
 
+%% Stochastic OpInf
+
+% max r value
+rmax = 20;
+
+h = double(tt(2) - tt(1));
+[~, L, s] = size(Qstate_all);
+isbilinear = false;
+
+seed_test = 42;
+
+% Fractal Gaussian noise
+H = 0.35;  % Hurst exponent
+fGn_all = cell(1, 20);
+
+% FOM expectation (average) over all samples
+EFOM = squeeze(mean(Qstate_all, 2)); 
+
+% Relative weak errors
+Q_T = Qstate_all(:,:,end);     % final state for all L samples (R^{n x L})
+f1FOM = mean(vecnorm(Q_T.^2));        
+f2FOM = mean(Q_T.^3./exp(Q_T), 'all');
+
+% Testing noise sample numbers
+L_test = [170, 1700, 17000, 170000];
+% L_test = [170, 1700, 17000];
+
+% Initialization
+EROM = cell(1,length(L_test)); CROM = cell(1,length(L_test));
+f1ROM = cell(1,length(L_test)); f2ROM = cell(1,length(L_test));
+
+E_error = cell(1,length(L_test)); C_error = cell(1,length(L_test));
+f1_error = cell(1,length(L_test)); f2_error = cell(1,length(L_test));
+
+% Test with different number of noise samples
+for j=1:length(L_test)
+
+EROM{j} = cell(1,rmax); CROM{j} = cell(1,rmax);
+f1ROM{j} = zeros(1,rmax); f2ROM{j} = zeros(1,rmax);
+
+E_error{j} = zeros(1,rmax); C_error{j} = zeros(1,rmax);
+f1_error{j} = zeros(1,rmax); f2_error{j} = zeros(1,rmax);
+
+tic
+for ii = 1:rmax
+    disp("ROM dimension " + ii)
+    rng(seed_test)
+
+    Vr_temp = V(:, 1:ii);
+
+    % Project the FOM observations
+    Q_train_temp = pagemtimes(Vr_temp', Qstate_all);  % R^{r x L x s}
+
+    % Estimate mean/covariance of the reduced observations
+    % mean of reduced states across L realizations
+    E_train = reshape(squeeze(mean(Q_train_temp, 2)), ii, s); % R^{r x s}
+
+    % Covariance of reduced states
+    C_train = page_cov(Q_train_temp, true); % R^{r x r}
+
+    % Drift OpInf
+    % [Ehatr, Ahatr, Bhatr, Nhatr] = infer_drift(E_train, u_train, h, isbilinear, s);
+    [Ehatr, Ahatr, Nhatr] = infer_drift(E_train, h, isbilinear, s);
+
+    % Diffusion OpInf
+    % [Mhatr, Khatr] = infer_diffusion(C_train, u_train, h, Ahatr, Nhatr);
+    [Mhatr, Khatr] = infer_diffusion(C_train, h, Ahatr, Nhatr);
+
+    % ROM function using Wiener process
+    fhatr = @(x0, L) ...
+        (Ehatr - h*Ahatr) \ ...
+        (x0 + sqrt(h)*Mhatr*randn(size(Mhatr,2), L)) ;
+
+    % ROM function using fractal Gaussian noise
+    % fhatr = @(x0, L) ...
+    %     (Ehatr - h*Ahatr) \ ...
+    %     (x0 + Mhatr*generate_fGn(size(Mhatr,2), L, h, H));
+
+    % ROM initial consdtion
+    xr0 = Vr_temp' * EFOM(:,1);
+
+    % ROM simulation w/ testing I.C.
+    % This simulates ROM across L samples
+    % Eopinf: R^{r x s}, Copinf: R^{r x r x s}
+    [Eopinf, Copinf, f1opinf, f2opinf] = compute_model(fhatr, Vr_temp, xr0, s, L_test(j));
+
+    % Reconstruct FOM dimension
+    E_recon = Vr_temp * Eopinf;  % R^{n x s}
+
+    % Vr*C*Vr^T (R^{n x n x s})
+    C_recon = pagemtimes( pagemtimes(Vr_temp, Copinf), Vr_temp' );
+ 
+    EROM{j}{ii} = E_recon;   CROM{j}{ii} = Copinf;
+    f1ROM{j}(ii) = f1opinf; f2ROM{j}(ii) = f2opinf;
+
+    E_error{j}(ii) = norm(EFOM - E_recon, "fro") / norm(EFOM, "fro");
+    % C_error{j}(ii) = page_norm(CFOM - C_recon) / page_norm(CFOM);
+    % E_error(ii) = norm(E_train - Eopinf, "fro") / norm(E_train, "fro");
+    C_error{j}(ii) = page_norm(C_train - Copinf) / page_norm(C_train);
+    f1_error{j}(ii) = abs(f1FOM - f1opinf) / abs(f1FOM);
+    f2_error{j}(ii) = abs(f2FOM - f2opinf) / abs(f2FOM);
+end
+toc
+
+end
+
+error.E_error = E_error;
+error.C_error = C_error;
+error.f1_error = f1_error;
+error.f2_error = f2_error;
+
 
 %% plot errors
 r = linspace(1, rmax, rmax);
 
-figure;
+figure('Color', 'w');
+
+for j=1:length(L_test)
 % expectation
+subplot(1,2,1)
+plot(r, error.E_error{j}, '-o', 'linewidth', 1.5, ...
+    'MarkerFaceColor','auto'); hold on;
+set(gca, 'YScale', 'log')
+title("Expectation error")
+% axis([1 rmax min(error.E_error)*0.9 max(error.E_error)*1.1])
+grid on
+
+% Covariance
+subplot(1,2,2)
+plot(r, error.C_error{j}, '-o', 'LineWidth', 1.5, ...
+    'MarkerFaceColor','auto'); hold on;
+set(gca, 'YScale', 'log')
+title("Covariance error")
+% axis([1 rmax min(error.C_error)*0.9 max(error.C_error)*1.1])
+grid on
+
+legend("L=170", "L=1700" )
+
+end
+
+
+%% plot errors
+r = linspace(1, rmax, rmax);
+
+figure('color', 'w');
+% Expectation
 subplot(1,2,1)
 plot(r, error.E_error, '-o', 'linewidth', 1.5); hold on;
 scatter(r, error.E_error, 40, [0 0.45 0.74], 'filled');
@@ -423,7 +741,7 @@ grid on
 % grid on
 
 
-%%
+%% Plot errors w.r.t r / regularization
 [r_grid, reg_grid] = meshgrid((1:20), reg1);
 
 E_error_array = cell2mat(E_error(:))';
@@ -445,14 +763,14 @@ zlabel('Relative ROM error')
 [r_min, idx_min] = min(cellfun(@min, E_error))
 
 %%
-r_opt = 14;
+r_opt = 4;
 [r_min, idx_min] = min(E_error{r_opt})
 
 
 %% ROM simulation w/ optimal r & regularizer
 
-rr = 14;
-reg_idx = 12;
+rr = 4;
+reg_idx = 14;
 
 Vr_temp = V(:, 1:rr);
     
@@ -475,12 +793,15 @@ C_train = page_cov(Q_train_temp, true);
 % ROM initial consdtion
 xr0 = Vr_temp' * EFOM(:,1);
 
-d_temp = size(Mhatr,2);
+fhatr = @(x0, L) ...
+    (Ehatr - h*Ahatr) \ ... 
+    (x0 + sqrt(h)*Mhatr*randn(size(Mhatr,2), L)) ;
 
 % % ROM function using Wiener process
-Wiener_noise = randn(d_temp, L);
-fhatr = @(x0, L) ...
-    (Ehatr - h*Ahatr) \ (x0 + sqrt(h)*Mhatr*Wiener_noise) ;
+% d_temp = size(Mhatr,2);
+% Wiener_noise = randn(d_temp, L);
+% fhatr = @(x0, L) ...
+%     (Ehatr - h*Ahatr) \ (x0 + sqrt(h)*Mhatr*Wiener_noise) ;
 
 % Pre-generate fractal Gaussian noise
 % fGn_temp = zeros(d_temp, L);
@@ -504,15 +825,15 @@ EROM_recon = Vr_temp*Eopinf;
 %%
 [TT, X] = meshgrid(tt, x);
 
-% r_opt = 10;
+r_opt = 7;
 % EROM_opt = V(:,1:r_opt)*EROM{r_opt}; 
 
-% EROM_opt = EROM{r_opt};
+EROM_opt = EROM{r_opt};
 
-ERPM_opt = EROM_recon;
+% ERPM_opt = EROM_recon;
 
 figure('Color','w');
-tile = tiledlayout(2,3,'Padding','compact','TileSpacing','compact');
+tile = tiledlayout(2, 3, 'Padding','compact','TileSpacing','compact');
 
 % Subplot 1: FOM expectation
 ax1 = nexttile;
@@ -637,4 +958,13 @@ function [stationary, drift] = decompose_LPF(x, fs, fc)
     
     % Stationary = original - drift
     stationary = x - drift;
+end
+
+function fGn = generate_fGn(d, L, h, H)
+    fGn = zeros(d, L);
+    for j = 1:d
+        fBm = wfbm(H, L+1);   % unit time step
+        fGn(j,:) = diff(fBm);
+    end
+    fGn = h^H * fGn;         % correct scaling
 end

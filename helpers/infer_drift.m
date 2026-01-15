@@ -52,7 +52,7 @@ for jj=1:min(numel(ind), s)
     rhs = [rhs, Er_dot(:,jj)];
 end
 
-disp("cond(D) = " + cond(D))
+fprintf("cond(D) = %.4e\n", cond(D))
 
 
 if exist('lambda', 'var') && ~isempty(reg)
