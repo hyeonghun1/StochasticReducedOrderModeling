@@ -20,11 +20,10 @@ rhs = [];
 
 % m = size(u_train{1}, 1);
 % p = numel(E_train);
+% u = u_train{ii};
 
 % central finite difference quotient of accuracy 2 along dimension 2
 [Er, Er_dot, ind] = central_finite_differences(E_train, h, 2, 2);
-
-% u = u_train{ii};
 
 for jj=1:min(numel(ind), s)
     % disp(jj)

@@ -1,5 +1,5 @@
 % function [E_test, C_test, f1, f2] = compute_model(f, V, x0_test, u_test, L_test)
-function [E_test, C_test, f1, f2] = compute_model(f, V, xr0_test, s, L_test)
+function [E_test, C_test, f1, f2] = compute_model(f, V, xr0_test, s, batchSize, L_test)
 
 %Inputs--------------------------
 % f: EulerMaruyamaStep function
@@ -19,14 +19,14 @@ r = size(xr0_test, 1);
 % [m, s] = size(u_test);
 
 % test parameters
-batchSize = 170;  % Number of samples per batch
+% batchSize = 170;  % Number of samples per batch/
 numBatches = ceil(L_test / batchSize);  % Total number of batches
 % -> full simulation of 1,000,000 trajectories is performed with 100
 % batches of 10,000 trajecs.
 
 if L_test <= batchSize
-  numBatches = 1;
-  batchSize = L_test;
+    numBatches = 1;
+    batchSize = L_test;
 end
 
 % initialize
@@ -58,8 +58,8 @@ for batch = 1:numBatches
   
   % Accumulate second moments E[X*X^T]
   for k=1:s
-    C_test(:,:,k) = C_test(:,:,k) + (Nb/L_test) * ( C_temp(:,:,k) ...
-                                                     + E_temp(:,k)*E_temp(:,k)' );
+     C_test(:,:,k) = C_test(:,:,k) + ...
+                     (Nb/L_test) * ( C_temp(:,:,k) + E_temp(:,k)*E_temp(:,k)' );
   end
   
   % f1 = f1 + 1/numBatches*f1_temp;
