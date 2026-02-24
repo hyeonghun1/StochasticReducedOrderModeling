@@ -15,8 +15,8 @@ function [Ehat,Ahat,Nhat] = infer_drift(E_train, h, isbilinear, s, reg)
 %---------------------------------
 
 r = size(E_train, 1);
-D = [];
-rhs = [];
+% D = [];
+% rhs = [];
 
 % m = size(u_train{1}, 1);
 % p = numel(E_train);
@@ -25,35 +25,33 @@ rhs = [];
 % central finite difference quotient of accuracy 2 along dimension 2
 [Er, Er_dot, ind] = central_finite_differences(E_train, h, 2, 2);
 
-for jj=1:min(numel(ind), s)
-    % disp(jj)
+K = min(numel(ind), s);
+r = size(Er,1);
 
-    if isbilinear
-      % system has bilinear term
-      D_new = [D, [Er(:,jj); u(:,jj) kron(u(:,jj), Er(:,jj))] ];
-    else
-      % system does not have a bilinear term
-      D_new = [D, [Er(:,jj)]];
+% if isbilinear
+%     col_dim = r + m + r*m;
+% else
+%     col_dim = r + m;
+% end
+
+col_dim = r;
+
+D   = zeros(col_dim, K);
+rhs = zeros(r, K);
+
+if isbilinear
+    for jj = 1:K
+        D(:,jj) = [Er(:,jj); u(:,jj); kron(u(:,jj), Er(:,jj))];
+        rhs(:,jj) = Er_dot(:,jj);
     end
-
-    % if ii<2 %r+m
-        % use full trajectories
-        D = D_new;
-    % else
-        % only use this time point if it reduces the condition number
-    %     if cond(D_new) < cond(D)
-    %         D = D_new;
-    %     else
-    %         continue
-    %     end
-    % end
-
-    rhs = [rhs, Er_dot(:,jj)];
+else
+    D = [Er(:,1:K)];
+    rhs = Er_dot(:,1:K);
 end
 
 fprintf("cond(D) = %.4e\n", cond(D))
 
-
+% Solve least-squares problem
 if exist('lambda', 'var') && ~isempty(reg)
     % Get regularization matrix
     Gamma = regularizer(r, reg);
@@ -65,10 +63,57 @@ if exist('lambda', 'var') && ~isempty(reg)
     Ahat = ops(1:r, 1:r);
 else
     % Non-regularized least-squares problem
-    ops = rhs/D;
+    Dt = D'; Rt = rhs';
+    ops = (Dt \ Rt)';
+    % ops = rhs/D;
     Ahat = ops(1:r, 1:r);
     % Bhat = ops(:, r+1:r+m);
 end
+
+% for jj=1:min(numel(ind), s)
+%     % disp(jj)
+% 
+%     if isbilinear
+%       % system has bilinear term
+%       D_new = [D, [Er(:,jj); u(:,jj) kron(u(:,jj), Er(:,jj))] ];
+%     else
+%       % system does not have a bilinear term
+%       D_new = [D, [Er(:,jj)]];
+%     end
+% 
+%     % if ii<2 %r+m
+%         % use full trajectories
+%         D = D_new;
+%     % else
+%         % only use this time point if it reduces the condition number
+%     %     if cond(D_new) < cond(D)
+%     %         D = D_new;
+%     %     else
+%     %         continue
+%     %     end
+%     % end
+% 
+%     rhs = [rhs, Er_dot(:,jj)];
+% end
+% 
+% fprintf("cond(D) = %.4e\n", cond(D))
+% 
+% 
+% if exist('lambda', 'var') && ~isempty(reg)
+%     % Get regularization matrix
+%     Gamma = regularizer(r, reg);
+% 
+%     % Solve regulairzed least-squares problem
+%     D_modified = D'*D + Gamma'*Gamma;
+%     rhs_modified = D' * R';
+%     ops = rhs_modified/D_modified;
+%     Ahat = ops(1:r, 1:r);
+% else
+%     % Non-regularized least-squares problem
+%     ops = rhs/D;
+%     Ahat = ops(1:r, 1:r);
+%     % Bhat = ops(:, r+1:r+m);
+% end
 
 if isbilinear
     Nhat = ops(:, r+m+1:end);

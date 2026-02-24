@@ -1,21 +1,21 @@
 clear; clc;
 
-%% 0.07vpp
+%% 0.25vpp
 
-t = h5read('/disk/hyk049/DHM_new_1Dcenter/Q_1D_0p07vpp_a.h5', '/t')';
-x = h5read('/disk/hyk049/DHM_new_1Dcenter/Q_1D_0p07vpp_a.h5', '/x')';
+t = h5read('/disk/hyk049/DHM_new_1Dcenter/Q_1D_0p25vpp_a.h5', '/t')';
+x = h5read('/disk/hyk049/DHM_new_1Dcenter/Q_1D_0p25vpp_a.h5', '/x')';
 nx = length(x);
 
-Q_a_1D = h5read('/disk/hyk049/DHM_new_1Dcenter/Q_1D_0p07vpp_a.h5', '/Q_1D')';
-Q_b_1D = h5read('/disk/hyk049/DHM_new_1Dcenter/Q_1D_0p07vpp_b.h5', '/Q_1D')';
-Q_c_1D = h5read('/disk/hyk049/DHM_new_1Dcenter/Q_1D_0p07vpp_c.h5', '/Q_1D')';
-Q_d_1D = h5read('/disk/hyk049/DHM_new_1Dcenter/Q_1D_0p07vpp_d.h5', '/Q_1D')';
-Q_e_1D = h5read('/disk/hyk049/DHM_new_1Dcenter/Q_1D_0p07vpp_e.h5', '/Q_1D')';
-Q_f_1D = h5read('/disk/hyk049/DHM_new_1Dcenter/Q_1D_0p07vpp_f.h5', '/Q_1D')';
-Q_g_1D = h5read('/disk/hyk049/DHM_new_1Dcenter/Q_1D_0p07vpp_g.h5', '/Q_1D')';
-Q_h_1D = h5read('/disk/hyk049/DHM_new_1Dcenter/Q_1D_0p07vpp_h.h5', '/Q_1D')';
-Q_i_1D = h5read('/disk/hyk049/DHM_new_1Dcenter/Q_1D_0p07vpp_i.h5', '/Q_1D')';
-Q_j_1D = h5read('/disk/hyk049/DHM_new_1Dcenter/Q_1D_0p07vpp_j.h5', '/Q_1D')';
+Q_a_1D = h5read('/disk/hyk049/DHM_new_1Dcenter/Q_1D_0p25vpp_a.h5', '/Q_1D')';
+Q_b_1D = h5read('/disk/hyk049/DHM_new_1Dcenter/Q_1D_0p25vpp_b.h5', '/Q_1D')';
+Q_c_1D = h5read('/disk/hyk049/DHM_new_1Dcenter/Q_1D_0p25vpp_c.h5', '/Q_1D')';
+Q_d_1D = h5read('/disk/hyk049/DHM_new_1Dcenter/Q_1D_0p25vpp_d.h5', '/Q_1D')';
+Q_e_1D = h5read('/disk/hyk049/DHM_new_1Dcenter/Q_1D_0p25vpp_e.h5', '/Q_1D')';
+Q_f_1D = h5read('/disk/hyk049/DHM_new_1Dcenter/Q_1D_0p25vpp_f.h5', '/Q_1D')';
+Q_g_1D = h5read('/disk/hyk049/DHM_new_1Dcenter/Q_1D_0p25vpp_g.h5', '/Q_1D')';
+Q_h_1D = h5read('/disk/hyk049/DHM_new_1Dcenter/Q_1D_0p25vpp_h.h5', '/Q_1D')';
+Q_i_1D = h5read('/disk/hyk049/DHM_new_1Dcenter/Q_1D_0p25vpp_i.h5', '/Q_1D')';
+Q_j_1D = h5read('/disk/hyk049/DHM_new_1Dcenter/Q_1D_0p25vpp_j.h5', '/Q_1D')';
 
 
 %% 10 datasets centerline case
@@ -94,7 +94,6 @@ end
 Qstate_all = cat(2, Qstate_a, Qstate_b, Qstate_c, Qstate_d, Qstate_e, ...
                 Qstate_f, Qstate_g, Qstate_h, Qstate_i, Qstate_j);
 
-
 [T, X] = meshgrid(tt, x);
 
 figure;
@@ -105,11 +104,8 @@ zlabel('Surface displacement [\mum]');
 colorbar; colormap jet;
 
 %%
-figure;
-surf(T, X, squeeze(mean(Qstate_b, 2)), 'EdgeColor', 'none');
-xlabel('Time [s]'); ylabel('x [\mum]');
-zlabel('Surface displacement [\mum]');
-colorbar; colormap jet;
+Q_subspace = squeeze(mean(Qstate_all, 2));
+min(Q_subspace(:))
 
 
 %%
@@ -170,32 +166,6 @@ for kk=1:Nt
     drawnow;
     pause(pause_time);
 end
-
-%%
-Nt = size(CFOM, 3);
-fps = 2000;
-
-v = VideoWriter('CFOM_covariance.mp4', 'Motion JPEG AVI');
-v.FrameRate = fps;
-open(v);
-
-figure;
-im = imagesc(CFOM(:,:,1));
-colormap("jet");  colorbar;
-caxis([min(CFOM(:)), max(CFOM(:))]);
-
-for kk = 1:Nt
-    set(im, 'CData', CFOM(:,:,kk));
-    title(sprintf('FOM Covariance t = %.2e', t(kk)));
-    drawnow;
-
-    frame = getframe(gcf);
-    writeVideo(v, frame);
-end
-
-close(v);
-
-
 
 
 %% Get POD basis
@@ -319,30 +289,202 @@ seed_test = 42;
 % FOM expectation (average) over all samples
 EFOM = squeeze(mean(Qstate_all, 2)); 
 
-% Relative weak errors
-Q_T = Qstate_all(:,:,end);     % final state for all L samples (R^{n x L})
-f1FOM = mean(vecnorm(Q_T.^2));        
-f2FOM = mean(Q_T.^3./exp(Q_T), 'all');
-
 % Testing noise sample numbers
-% L_test = L * [1, 10, 100];
-L_test = L * [1, 10, 100, 1000];
+L_test = L * [1];
+% L_test = L * [1, 10, 100, 1000];
 
-% Initialization
-EROM = cell(1,length(L_test)); CROM = cell(1,length(L_test));
-f1ROM = cell(1,length(L_test)); f2ROM = cell(1,length(L_test));
 
-E_error = cell(1,length(L_test)); C_error = cell(1,length(L_test));
-f1_error = cell(1,length(L_test)); f2_error = cell(1,length(L_test));
+%%
+BC_1 = EFOM(1,:);
+BC_2 = EFOM(end,:);
+u_train = (BC_1 + BC_2)/2 ;
 
+figure;
+plot(BC_1, 'DisplayName', '1'); 
+hold on
+plot(BC_2, 'DisplayName', 'end');
+plot(u_train, 'DisplayName', 'u_{input}');
+
+legend show
+grid on
+
+%%
 % Test with different number of noise samples
+
+% u_train = (BC_1 + BC_2)/2 ;
+
+f_input = 7e6;
+u_amp = 10;
+u_train = u_amp*cos(2*pi*f_input*tt);
+figure;
+plot(tt, u_train)
+
+%%
+
+A_reg = logspace(-1, 2, 10);
+B_reg = logspace(2, 6, 10);
+N_reg = logspace(0, 3, 10);
+
+EROM = cell(1, length(A_reg));
+CROM = cell(1, length(B_reg));
+E_error = zeros(length(A_reg), length(B_reg));
+C_error = zeros(length(A_reg), length(B_reg));
+
+r_opt = 17;
+Vr_temp = V(:, 1:r_opt);
+
+% Project the FOM observations
+Q_train_temp = pagemtimes(Vr_temp', Qstate_all);  % R^{r x L x s}
+
+% Estimate mean/covariance of the reduced observations
+% mean of reduced states across L realizations
+E_train = reshape(squeeze(mean(Q_train_temp, 2)), r_opt, s); % R^{r x s}
+
+% Covariance of reduced states
+C_train = page_cov(Q_train_temp, true); % R^{r x r x s}
+    
+isbilinear = false;
+
+for ii = 1:length(A_reg)
+    tic
+    disp(ii + "th A_reg")
+
+    EROM{ii} = cell(1, length(B_reg));
+    CROM{ii} = cell(1, length(B_reg));    
+
+    for jj = 1:length(B_reg)
+    
+    rng(seed_test)
+    lambda = [A_reg(ii), B_reg(jj), 1];
+    
+    % Drift OpInf
+    [Ehatr, Ahatr, Bhatr, Nhatr] = infer_drift_u(E_train, u_train, h, isbilinear, lambda);
+    
+    % Diffusion OpInf
+    [Mhatr, Khatr] = infer_diffusion_u(C_train, u_train, h, Ahatr, Nhatr);
+    
+    sigma = 10;
+    % ROM function using Wiener process
+    fhatr = @(x0, u, L) ...
+            (Ehatr - h*Ahatr - h*Nhatr*u) \ ...
+            (x0 + h*Bhatr*u + sqrt(h)*Mhatr*sigma*randn(size(Mhatr,2), L)) ;
+    
+    % ROM initial consdtion
+    xr0 = Vr_temp' * EFOM(:,1);
+    
+    % ROM simulation w/ testing I.C. across L samples
+    % Eopinf: R^{r x s}, Copinf: R^{r x r x s} 
+    [Eopinf, Copinf] = compute_model_u(fhatr, Vr_temp, xr0, u_train, L, L);
+
+    % Reconstruct FOM dimension
+    E_recon = Vr_temp * Eopinf;  % R^{n x s}
+     
+    EROM{ii}{jj} = E_recon;
+    CROM{ii}{jj} = Copinf;
+    
+    E_error(ii,jj) = norm(E_train - Eopinf, 'fro') / norm(E_train, 'fro');
+    C_error(ii,jj) = page_norm(C_train - Copinf) / page_norm(C_train);
+    end
+    
+    toc
+end
+
+error.E_error = E_error;
+error.C_error = C_error;
+
+
+
+%%
+save(['/disk/hyk049/WT_RomFit/0p25/' ...
+    '0p25vpp_stoc_opinf_10datasets_B_10sigma.mat'], 'EFOM', 'EROM_opt');
+
+
+%%
+[TT, X] = meshgrid(tt, x);
+
+EROM_opt = EROM{9}{5};
+
+figure('Color', 'w');
+tile = tiledlayout(2, 3, 'Padding','compact','TileSpacing','compact');
+
+% Subplot 1: FOM expectation
+ax1 = nexttile;
+s1 = surf(ax1, TT, X, EFOM, 'EdgeColor','none');
+title(ax1,"Expected dynamics of" + newline + "experimental 1D capillary wave" ...
+       + newline + "(L=170)");
+xlabel(ax1,"Time [s]"); ylabel(ax1,"x [\mum]");
+zlabel(ax1,"Surface elevation [\mum]");
+% xlim(ax1,[0,0.06]); xticks(ax1,0:0.01:0.05);
+colorbar(ax1); colormap(ax1, jet);
+
+% Subplot 2: Stochastic OpInf ROM expectation
+ax2 = nexttile;
+s2 = surf(ax2, TT, X, EROM_opt, 'EdgeColor', 'none');
+title(ax2,"Expected dynamics of" + newline + "stochastic linear nonautonomous ROM" ...
+      + newline + "(L=170)");
+xlabel(ax2,"Time [s]"); ylabel(ax2,"x [\mum]");
+zlabel(ax2,"Surface elevation [\mum]");
+% xlim(ax2,[0,0.06]); xticks(ax2,0:0.01:0.05);
+colorbar(ax2); colormap(ax2, jet);
+
+
+% Subplot 3: Pointwise relative error (%)
+rel_error = abs(EFOM - EROM_opt)./abs(EFOM);
+
+ax3 = nexttile;
+s3 = surf(ax3, TT, X, rel_error*100, 'EdgeColor', 'none');
+title(ax3,"Pointwise relative error (%)");
+xlabel(ax3,"Time [s]"); ylabel(ax3,"x [\mum]");
+zlabel(ax3,"Relative error (%)");
+% xlim(ax3,[0,0.06]); xticks(ax3,0:0.01:0.05);
+colorbar(ax3); colormap(ax3, hot);
+
+ax4 = nexttile;
+s4 = surf(ax4, TT, X, EFOM, 'EdgeColor','none');
+view(ax4,2)
+xlabel(ax4,"Time [s]"); ylabel(ax4,"x [\mum]");
+zlabel(ax4,"Surface elevation [\mum]");
+% xlim(ax4,[0,0.06]); xticks(ax4,0:0.01:0.05);
+colorbar(ax4); colormap(ax4, jet);
+
+ax5 = nexttile;
+s5 = surf(ax5, TT, X, EROM_opt, 'EdgeColor', 'none');
+view(ax5,2)
+xlabel(ax5,"Time [s]"); ylabel(ax5,"x [\mum]");
+zlabel(ax5,"Surface elevation [\mum]");
+% xlim(ax5,[0,0.06]); xticks(ax5,0:0.01:0.05);
+colorbar(ax5); colormap(ax5, jet);
+
+ax6 = nexttile;
+s6 = surf(ax6, TT, X, rel_error*100, 'EdgeColor', 'none');
+view(ax6,2)
+xlabel(ax6, "Time [s]"); ylabel(ax6,"x [\mum]");
+zlabel(ax6,"Relative error (%)");
+% xlim(ax6,[0,0.06]); xticks(ax6,0:0.01:0.05);
+colorbar(ax6); colormap(ax6, hot);
+
+title(tile, sprintf("$r=%d$", r_opt), 'interpreter', 'latex');
+
+zmin = min([s1.ZData(:); s2.ZData(:); s4.ZData(:); s5.ZData(:)]);
+zmax = max([s1.ZData(:); s2.ZData(:); s4.ZData(:); s5.ZData(:)]);
+set([ax1 ax2 ax4 ax5], 'CLim', [zmin zmax])
+
+zlim(ax1, [zmin zmax])
+zlim(ax2, [zmin zmax])
+zlim(ax4, [zmin zmax])
+zlim(ax5, [zmin zmax])
+
+
+
+%%
+% Test with different number of noise samples
+
+u_train = (BC_1 + BC_2)/2 ;
+
 for j=1:length(L_test)
 
-    EROM{j} = cell(1,rmax); CROM{j} = cell(1,rmax);
-    f1ROM{j} = zeros(1,rmax); f2ROM{j} = zeros(1,rmax);
-    
+    EROM{j} = cell(1,rmax); CROM{j} = cell(1,rmax);    
     E_error{j} = zeros(1,rmax); C_error{j} = zeros(1,rmax);
-    f1_error{j} = zeros(1,rmax); f2_error{j} = zeros(1,rmax);
 
     tic
     for ii = 1:rmax
@@ -361,18 +503,23 @@ for j=1:length(L_test)
         % Covariance of reduced states
         C_train = page_cov(Q_train_temp, true); % R^{r x r x s}
     
+        isbilinear = false;
+        lambda = [1, 1e3];
         % Drift OpInf
-        % [Ehatr, Ahatr, Bhatr, Nhatr] = infer_drift(E_train, u_train, h, isbilinear, s);
-        [Ehatr, Ahatr, Nhatr] = infer_drift(E_train, h, isbilinear, s);
+        [Ehatr, Ahatr, Bhatr, Nhatr] = infer_drift_u(E_train, u_train, h, isbilinear, lambda);
     
         % Diffusion OpInf
-        % [Mhatr, Khatr] = infer_diffusion(C_train, u_train, h, Ahatr, Nhatr);
-        [Mhatr, Khatr] = infer_diffusion(C_train, h, Ahatr, Nhatr);
+        [Mhatr, Khatr] = infer_diffusion_u(C_train, u_train, h, Ahatr, Nhatr);
     
+        sigma = 1;
         % ROM function using Wiener process
-        fhatr = @(x0, L) ...
-            (Ehatr - h*Ahatr) \ ...
-            (x0 + sqrt(h)*Mhatr*randn(size(Mhatr,2), L)) ;
+        fhatr = @(x0, u, L) ...
+            (Ehatr - h*Ahatr - h*Nhatr*u) \ ...
+            (x0 + h*Bhatr*u + sqrt(h)*Mhatr*sigma*randn(size(Mhatr,2), L)) ;
+
+        % fhatr = @(x0, L) ...
+        %     (Ehatr - h*Ahatr) \ ...
+        %     (x0 + sqrt(h)*Mhatr*sigma*randn(size(Mhatr,2), L)) ;
     
         % ROM initial consdtion
         xr0 = Vr_temp' * EFOM(:,1);
@@ -380,21 +527,19 @@ for j=1:length(L_test)
         % ROM simulation w/ testing I.C.
         % This simulates ROM across L samples
         % Eopinf: R^{r x s}, Copinf: R^{r x r x s} 
-        [Eopinf, Copinf, f1opinf, f2opinf] = compute_model(fhatr, Vr_temp, xr0, s, ...
-                                                            L, L_test(j));
+        [Eopinf, Copinf] = compute_model_u(fhatr, Vr_temp, ...
+                                            xr0, u_train, L, L_test(j));
         % Reconstruct FOM dimension
         E_recon = Vr_temp * Eopinf;  % R^{n x s}
     
         % Vr*C*Vr^T (R^{n x n x s})
         % C_recon = pagemtimes( pagemtimes(Vr_temp, Copinf), Vr_temp' );
      
-        EROM{j}{ii} = E_recon;   CROM{j}{ii} = Copinf;
-        f1ROM{j}(ii) = f1opinf; f2ROM{j}(ii) = f2opinf;
+        EROM{j}{ii} = E_recon;
+        CROM{j}{ii} = Copinf;
     
         E_error{j}(ii) = norm(E_train - Eopinf, 'fro') / norm(E_train, 'fro');
         C_error{j}(ii) = page_norm(C_train - Copinf) / page_norm(C_train);
-        f1_error{j}(ii) = abs(f1FOM - f1opinf) / abs(f1FOM);
-        f2_error{j}(ii) = abs(f2FOM - f2opinf) / abs(f2FOM);
     end
     toc
 
@@ -402,10 +547,6 @@ end
 
 error.E_error = E_error;
 error.C_error = C_error;
-error.f1_error = f1_error;
-error.f2_error = f2_error;
-
-
 
 %% plot errors
 r = linspace(1, rmax, rmax);
@@ -435,21 +576,16 @@ title("Covariance error")
 % axis([1 rmax min(error.C_error)*0.9 max(error.C_error)*1.1])
 grid on
 
-legend(sprintf("L=%d", L_test(1)), sprintf("L=%d", L_test(2)), ...
-       sprintf('L=%d', L_test(3)), sprintf("L=%d", L_test(4)));
+legend(sprintf("L=%d", L_test(1)), sprintf("L=%d", L_test(2)));
 
 end
-
-%%
-save(['/data/home/hyk049/Wave_Turbulence/' ...
-    '0p25vpp_stoc_opinf_10datasets.mat'], 'EFOM', 'EROM_opt');
 
 
 %%
 [TT, X] = meshgrid(tt, x);
 
-r_opt = 8;
-EROM_opt = EROM{4}{r_opt};
+r_opt = 13;
+EROM_opt = EROM{1}{r_opt};
 
 figure('Color','w');
 tile = tiledlayout(2, 3, 'Padding','compact','TileSpacing','compact');
@@ -514,7 +650,7 @@ title(tile, sprintf("$r=%d$", r_opt), 'interpreter', 'latex');
 
 zmin = min([s1.ZData(:); s2.ZData(:); s4.ZData(:); s5.ZData(:)]);
 zmax = max([s1.ZData(:); s2.ZData(:); s4.ZData(:); s5.ZData(:)]);
-set([ax1 ax2 ax4 ax5], 'CLim', [cmin cmax])
+set([ax1 ax2 ax4 ax5], 'CLim', [zmin zmax])
 
 zlim(ax1, [zmin zmax])
 zlim(ax2, [zmin zmax])
@@ -522,10 +658,9 @@ zlim(ax4, [zmin zmax])
 zlim(ax5, [zmin zmax])
 
 
-
 %%
 LL = 170000;  % testing # of noise samples
-rr = 8;
+rr = 18;
 Vr_temp = V(:, 1:rr);
 
 h = double(tt(2) - tt(1));
@@ -554,9 +689,10 @@ C_train = page_cov(Q_train_temp, true); % R^{r x r}
 % Diffusion OpInf
 [Mhatr, Khatr] = infer_diffusion(C_train, h, Ahatr, Nhatr);
 
+sigma = 5;
 % ROM function using Wiener process
 fhatr = @(x0, L) (Ehatr - h*Ahatr) \ ...
-                    (x0 + sqrt(h)*Mhatr*randn(size(Mhatr,2), L)) ;
+                    (x0 + sqrt(h)*Mhatr*sigma*randn(size(Mhatr,2), L)) ;
 
 % ROM initial consdtion
 xr0 = Vr_temp' * EFOM(:,1);
@@ -575,7 +711,7 @@ C_recon = pagemtimes( pagemtimes(Vr_temp, Copinf), Vr_temp' );
 
 %%
 save(['/data/home/hyk049/Wave_Turbulence/' ...
-    '0p07vpp_stoc_opinf_10datasets.mat'], 'EFOM', 'EROM_opt');
+    '0p15vpp_stoc_opinf_10datasets_input.mat'], 'EFOM', 'EROM_opt');
 
 
 %%
@@ -589,7 +725,8 @@ tile = tiledlayout(2, 3, 'Padding','compact','TileSpacing','compact');
 % Subplot 1: FOM expectation
 ax1 = nexttile;
 s1 = surf(ax1, TT, X, EFOM, 'EdgeColor','none');
-title(ax1,"FOM expectation");
+title(ax1,"Expected dynamics of" + newline + "experimental 1D capillary wave" ...
+       + newline + "(L=170)");
 xlabel(ax1,"Time [s]"); ylabel(ax1,"x [\mum]");
 zlabel(ax1,"Surface elevation [\mum]");
 % xlim(ax1,[0,0.06]); xticks(ax1,0:0.01:0.05);
@@ -598,7 +735,8 @@ colorbar(ax1); colormap(ax1, jet);
 % Subplot 2: Stochastic OpInf ROM expectation
 ax2 = nexttile;
 s2 = surf(ax2, TT, X, EROM_opt, 'EdgeColor', 'none');
-title(ax2,"Stochastic OpInf ROM expectation");
+title(ax2,"Expected dynamics of" + newline + "stochastic OpInf ROM fitting" ...
+      + newline + "(L=170,000)");
 xlabel(ax2,"Time [s]"); ylabel(ax2,"x [\mum]");
 zlabel(ax2,"Surface elevation [\mum]");
 % xlim(ax2,[0,0.06]); xticks(ax2,0:0.01:0.05);

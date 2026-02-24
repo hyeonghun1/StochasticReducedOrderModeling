@@ -484,8 +484,8 @@ zlim(ax5, [zmin zmax])
 
 
 %%
-LL = 17000;  % testing # of noise samples
-rr = 18;
+LL = 170000;  % testing # of noise samples
+rr = 14;
 Vr_temp = V(:, 1:rr);
 
 h = double(tt(2) - tt(1));
@@ -549,7 +549,8 @@ tile = tiledlayout(2, 3, 'Padding','compact','TileSpacing','compact');
 % Subplot 1: FOM expectation
 ax1 = nexttile;
 s1 = surf(ax1, TT, X, EFOM, 'EdgeColor','none');
-title(ax1,"FOM expectation");
+title(ax1,"Expected dynamics of" + newline + "experimental 1D capillary wave" ...
+       + newline + "(L=170)");
 xlabel(ax1,"Time [s]"); ylabel(ax1,"x [\mum]");
 zlabel(ax1,"Surface elevation [\mum]");
 % xlim(ax1,[0,0.06]); xticks(ax1,0:0.01:0.05);
@@ -558,7 +559,8 @@ colorbar(ax1); colormap(ax1, jet);
 % Subplot 2: Stochastic OpInf ROM expectation
 ax2 = nexttile;
 s2 = surf(ax2, TT, X, EROM_opt, 'EdgeColor', 'none');
-title(ax2,"Stochastic OpInf ROM expectation");
+title(ax2,"Expected dynamics of" + newline + "stochastic OpInf ROM fitting" ...
+      + newline + "(L=170,000)");
 xlabel(ax2,"Time [s]"); ylabel(ax2,"x [\mum]");
 zlabel(ax2,"Surface elevation [\mum]");
 % xlim(ax2,[0,0.06]); xticks(ax2,0:0.01:0.05);
