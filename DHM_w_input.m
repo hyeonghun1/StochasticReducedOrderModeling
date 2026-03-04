@@ -1,99 +1,63 @@
 clear; clc;
 
-%% 0.25vpp
+%% 0.07vpp
 
-t = h5read('/disk/hyk049/DHM_new_1Dcenter/Q_1D_0p25vpp_a.h5', '/t')';
-x = h5read('/disk/hyk049/DHM_new_1Dcenter/Q_1D_0p25vpp_a.h5', '/x')';
+input = '0p07vpp'; 
+
+% Letters for the 10 files
+% letters = ['a':'f', 'h':'k'];
+letters = 'a':'j';
+
+% letters = arrayfun(@(c) string(c), 'a':'i');
+% letters(end+1) = "a_1127";
+
+num_files = numel(letters);
+
+base_path = '/disk/hyk049/DHM_new_1Dcenter/';
+
+first_file = sprintf('%sQ_1D_%s_a.h5', base_path, input);
+t = h5read(first_file, '/t')'; x = h5read(first_file, '/x')';
 nx = length(x);
 
-Q_a_1D = h5read('/disk/hyk049/DHM_new_1Dcenter/Q_1D_0p25vpp_a.h5', '/Q_1D')';
-Q_b_1D = h5read('/disk/hyk049/DHM_new_1Dcenter/Q_1D_0p25vpp_b.h5', '/Q_1D')';
-Q_c_1D = h5read('/disk/hyk049/DHM_new_1Dcenter/Q_1D_0p25vpp_c.h5', '/Q_1D')';
-Q_d_1D = h5read('/disk/hyk049/DHM_new_1Dcenter/Q_1D_0p25vpp_d.h5', '/Q_1D')';
-Q_e_1D = h5read('/disk/hyk049/DHM_new_1Dcenter/Q_1D_0p25vpp_e.h5', '/Q_1D')';
-Q_f_1D = h5read('/disk/hyk049/DHM_new_1Dcenter/Q_1D_0p25vpp_f.h5', '/Q_1D')';
-Q_g_1D = h5read('/disk/hyk049/DHM_new_1Dcenter/Q_1D_0p25vpp_g.h5', '/Q_1D')';
-Q_h_1D = h5read('/disk/hyk049/DHM_new_1Dcenter/Q_1D_0p25vpp_h.h5', '/Q_1D')';
-Q_i_1D = h5read('/disk/hyk049/DHM_new_1Dcenter/Q_1D_0p25vpp_i.h5', '/Q_1D')';
-Q_j_1D = h5read('/disk/hyk049/DHM_new_1Dcenter/Q_1D_0p25vpp_j.h5', '/Q_1D')';
+% Preallocate cell array for all Q_1D signals
+Q_1D = cell(1, num_files);
+
+% Read all files
+for k = 1:num_files
+    filename = base_path + "Q_1D_" + input + "_" + letters(k) + ".h5";
+    Q_1D{k} = h5read(filename, '/Q_1D')';
+end
 
 
-%% 10 datasets centerline case
+%% Split samples
 
-split_size = 5760; % # of snapshots with
-% one segment of temporal independence
-
+split_size = 5760;                 % # of snapshots per segment
 num_segs = floor(length(t)/split_size);
 tt = t(1:split_size);
 
-Q_split_a = cell(1, num_segs);
-Q_split_b = cell(1, num_segs);
-Q_split_c = cell(1, num_segs);
-Q_split_d = cell(1, num_segs);
-Q_split_e = cell(1, num_segs);
-Q_split_f = cell(1, num_segs);
-Q_split_g = cell(1, num_segs);
-Q_split_h = cell(1, num_segs);
-Q_split_i = cell(1, num_segs);
-Q_split_j = cell(1, num_segs);
+num_signals = numel(Q_1D);
 
-Q_all_a = Q_a_1D(:,1:split_size*num_segs);
-Q_all_b = Q_b_1D(:,1:split_size*num_segs);
-Q_all_c = Q_c_1D(:,1:split_size*num_segs);
-Q_all_d = Q_d_1D(:,1:split_size*num_segs);
-Q_all_e = Q_e_1D(:,1:split_size*num_segs);
-Q_all_f = Q_f_1D(:,1:split_size*num_segs);
-Q_all_g = Q_g_1D(:,1:split_size*num_segs);
-Q_all_h = Q_h_1D(:,1:split_size*num_segs);
-Q_all_i = Q_i_1D(:,1:split_size*num_segs);
-Q_all_j = Q_j_1D(:,1:split_size*num_segs);
+% Qstate_all: (nx, num_segs*num_signals, split_size)
+Qstate_all = zeros(nx, num_segs*num_signals, split_size);
 
+for s = 1:num_signals
+    % Truncate each Q signal to an integer number of segments
+    Q_all = Q_1D{s}(:, 1:split_size*num_segs);
 
-for k=1:num_segs
-    idx_start = (k-1)*split_size + 1;
-    idx_end = k*split_size;
+    % Split each signal into segments and assign to Qstate_all
+    for k = 1:num_segs
+        idx_start = (k-1)*split_size + 1;
+        idx_end   = k*split_size;
 
-    Q_split_a{k} = Q_all_a(:, idx_start:idx_end);
-    Q_split_b{k} = Q_all_b(:, idx_start:idx_end);
-    Q_split_c{k} = Q_all_c(:, idx_start:idx_end);
-    Q_split_d{k} = Q_all_d(:, idx_start:idx_end);
-    Q_split_e{k} = Q_all_e(:, idx_start:idx_end);
-    Q_split_f{k} = Q_all_f(:, idx_start:idx_end);
-    Q_split_g{k} = Q_all_g(:, idx_start:idx_end);
-    Q_split_h{k} = Q_all_h(:, idx_start:idx_end);
-    Q_split_i{k} = Q_all_i(:, idx_start:idx_end);
-    Q_split_j{k} = Q_all_j(:, idx_start:idx_end);
+        % Compute column index range in Qstate_all
+        col_idx = (s-1)*num_segs + k;
+
+        % Assign the segment
+        Qstate_all(:, col_idx, :) = Q_all(:, idx_start:idx_end);
+    end
 end
 
-Qstate_a = zeros(nx, num_segs, split_size);
-Qstate_b = zeros(nx, num_segs, split_size);
-Qstate_c = zeros(nx, num_segs, split_size);
-Qstate_d = zeros(nx, num_segs, split_size);
-Qstate_e = zeros(nx, num_segs, split_size);
-Qstate_f = zeros(nx, num_segs, split_size);
-Qstate_g = zeros(nx, num_segs, split_size);
-Qstate_h = zeros(nx, num_segs, split_size);
-Qstate_i = zeros(nx, num_segs, split_size);
-Qstate_j = zeros(nx, num_segs, split_size);
-
-for i=1:num_segs
-    Qstate_a(:,i,:) = Q_split_a{i};
-    Qstate_b(:,i,:) = Q_split_b{i};
-    Qstate_c(:,i,:) = Q_split_c{i};
-    Qstate_d(:,i,:) = Q_split_d{i};
-    Qstate_e(:,i,:) = Q_split_e{i};
-    Qstate_f(:,i,:) = Q_split_f{i};
-    Qstate_g(:,i,:) = Q_split_g{i};
-    Qstate_h(:,i,:) = Q_split_h{i};
-    Qstate_i(:,i,:) = Q_split_i{i};
-    Qstate_j(:,i,:) = Q_split_j{i};
-end
-
-
-%%
-Qstate_all = cat(2, Qstate_a, Qstate_b, Qstate_c, Qstate_d, Qstate_e, ...
-                Qstate_f, Qstate_g, Qstate_h, Qstate_i, Qstate_j);
-
+% Plot expected dynamics
 [T, X] = meshgrid(tt, x);
 
 figure;
@@ -103,69 +67,58 @@ zlabel('Surface displacement [\mum]');
 % xlim([0 0.06]); xticks(0:0.01:0.05); 
 colorbar; colormap jet;
 
-%%
-Q_subspace = squeeze(mean(Qstate_all, 2));
-min(Q_subspace(:))
+
+%% Filter signals
+
+FS_DHM = 115200;
+fc = 5e3;
+
+% Design 4th-order Butterworth LPF
+Wn = fc / (FS_DHM/2);
+[b, a] = butter(4, Wn, 'low');
+
+% Reshape to 2D for fast filtering
+[nx, Nsamp, Nt] = size(Qstate_all);
+
+Q_reshaped = reshape(Qstate_all, nx*Nsamp, Nt);
+
+% Zero-phase filtering along time dimension
+Q_filtered = filtfilt(b, a, Q_reshaped')';  % filtfilt works column-wise
+
+% Reshape back to 3D
+Qstate_filtered = reshape(Q_filtered, nx, Nsamp, Nt);
 
 
-%%
-[T, X] = meshgrid(tt, x);
+% Plot expected dynamics (filtered)
+figure('color', 'w');
+surf(T, X, squeeze(mean(Qstate_filtered, 2)), 'EdgeColor', 'none');
+xlabel('Time [s]'); ylabel('x [\mum]');
+zlabel('Surface displacement [\mum]');
+colorbar; colormap jet;
 
-Z = cell(1,10);
-Z{1} = squeeze(mean(Qstate_a, 2));
-Z{2} = squeeze(mean(Qstate_b, 2));
-Z{3} = squeeze(mean(Qstate_c, 2));
-Z{4} = squeeze(mean(Qstate_d, 2));
-Z{5} = squeeze(mean(Qstate_e, 2));
-Z{6} = squeeze(mean(Qstate_f, 2));
-Z{7} = squeeze(mean(Qstate_g, 2));
-Z{8} = squeeze(mean(Qstate_h, 2));
-Z{9} = squeeze(mean(Qstate_i, 2));
-Z{10} = squeeze(mean(Qstate_j, 2));
-
-% Compute common color limits (exclude last if not plotting it)
-zmin = min([Z{1}(:); Z{2}(:); Z{3}(:); Z{4}(:); Z{5}(:); ...
-            Z{6}(:); Z{7}(:); Z{8}(:); Z{9}(:); Z{10}(:)]);
-zmax = max([Z{1}(:); Z{2}(:); Z{3}(:); Z{4}(:); Z{5}(:); ...
-            Z{6}(:); Z{7}(:); Z{8}(:); Z{9}(:); Z{10}(:)]);
-figure;
-tiledlayout(2, 5,'Padding','compact','TileSpacing','compact');
-
-for k = 1:10
-    ax = nexttile;
-    surf(ax, T, X, Z{k}, 'EdgeColor', 'none');
-    xlabel(ax,'Time [s]'); ylabel(ax,'x [\mum]');
-    zlabel(ax,'Surface displacement [\mum]');
-    xlim(ax,[0 0.06]); xticks(ax,0:0.01:0.05);
-    caxis(ax,[zmin zmax]);
-    view(ax,3);
-    colormap(ax, jet);
-    colorbar(ax);
-end
 
 
 %% FOM covariance
-CFOM = page_cov(Qstate_all, true);
-
-
-%% plot empirical covariance
-
-Nt = size(CFOM, 3);
-fps = 2000;
-pause_time = 1/fps;
-
-figure;
-im = imagesc(CFOM(:,:,1));
-colormap("jet");
-colorbar;
-caxis([min(CFOM(:)), max(CFOM(:))]);
-
-for kk=1:Nt
-    set(im, 'CData', CFOM(:,:,kk));
-    title(sprintf('FOM Covariance t = %.2e', t(kk)));
-    drawnow;
-    pause(pause_time);
-end
+% CFOM = page_cov(Qstate_all, true);
+% 
+% %% plot empirical covariance
+% 
+% Nt = size(CFOM, 3);
+% fps = 2000;
+% pause_time = 1/fps;
+% 
+% figure;
+% im = imagesc(CFOM(:,:,1));
+% colormap("jet");
+% colorbar;
+% caxis([min(CFOM(:)), max(CFOM(:))]);
+% 
+% for kk=1:Nt
+%     set(im, 'CData', CFOM(:,:,kk));
+%     title(sprintf('FOM Covariance t = %.2e', t(kk)));
+%     drawnow;
+%     pause(pause_time);
+% end
 
 
 %% Get POD basis
@@ -175,106 +128,6 @@ disp("Computing subspace Vr...")
 disp("Subspace computation complete!")
 
 
-%% plot singular values &
-% Projection errors
-
-normalized_sigma = diag(S)/max(diag(S));
-
-proj_error = zeros(1, size(Qstate_all, 1));
-diagS = diag(S);
-sum_sigma = sum(diagS.^2);
-
-for rr = 1:200
-    proj_error(rr) = sqrt(sum(diagS(rr+1:end).^2) / sum_sigma) ;
-end
-
-figure('Color','w');
-subplot(2,2,2)
-semilogy(linspace(1,200,200), proj_error)
-hold on
-scatter(linspace(1,200,200), proj_error, '*')
-yscale('log')
-xlabel('Reduced dimension $r$', 'Interpreter','latex', 'FontSize', 15)
-ylabel('Projection error $\rho_r$', 'Interpreter','latex', 'FontSize', 15)
-grid on
-
-subplot(2,2,1)
-semilogy(normalized_sigma);
-hold on;
-scatter(1:length(diag(S)), normalized_sigma, 'filled'); hold off;
-xlabel('Reduced dimension $r$', 'Interpreter','latex', 'FontSize', 15)
-ylabel('Normalized singular values', 'Interpreter','latex', 'FontSize', 15)
-grid on;
-
-subplot(2,2,4)
-semilogy(linspace(1,200,200), proj_error)
-hold on
-scatter(linspace(1,200,200), proj_error, '*')
-yscale('log')
-xlim([0,20])
-xlabel('Reduced dimension $r$', 'Interpreter','latex', 'FontSize', 15)
-ylabel('Projection error $\rho_r$', 'Interpreter','latex', 'FontSize', 15)
-grid on
-
-subplot(2,2,3)
-semilogy(normalized_sigma);
-hold on;
-scatter(1:length(diag(S)), normalized_sigma, 'filled'); hold off;
-xlim([0,20])
-xlabel('Reduced dimension $r$', 'Interpreter','latex', 'FontSize', 15)
-ylabel('Normalized singular values', 'Interpreter','latex', 'FontSize', 15)
-grid on;
-
-
-%% plot projections V*V^T*Q
-QFOM_mean = squeeze(mean(Qstate_all, 2));
-
-r_list = [1 3 5 10 20];
-
-figure('Color','w');
-tile = tiledlayout(2, 3, 'TileSpacing','compact', 'Padding','compact');
-
-% Plot FOM
-ax(1) = nexttile;
-s(1) = surf(T, X, QFOM_mean, 'EdgeColor','none');
-title('FOM')
-xlabel('Time [s]'); ylabel('x [\mum]');
-zlabel('Surface displacement [\mum]');
-% xlim([0 0.06]); xticks(0:0.01:0.05);
-view(2)   % optional: top view (remove if you want 3D)
-
-% Plot ROMs
-for k = 1:numel(r_list)
-    r = r_list(k);
-
-    Vrtemp = V(:, 1:r);
-    Q_proj = Vrtemp * (Vrtemp' * reshape(Qstate_all, nx, []));
-    Q_proj = reshape(Q_proj, nx, size(Qstate_all,2), size(Qstate_all,3));
-
-    QROM_mean = squeeze(mean(Q_proj, 2));
-
-    ax(k+1) = nexttile;
-    s(k+1) = surf(T, X, QROM_mean, 'EdgeColor','none');
-    title(['Projection (r = ' num2str(r) ')'])
-    xlabel('Time [s]'); ylabel('x [\mum]');
-    % xlim([0 0.06]); xticks(0:0.01:0.05);
-    view(2)   % optional
-
-    clear Q_proj QROM_mean
-end
-
-% Shared colormap and color limits
-colormap(jet)
-allC = vertcat(s.CData);
-clim = [min(allC(:)), max(allC(:))];
-set(ax, 'CLim', clim)
-
-% One shared colorbar
-cb = colorbar;
-cb.Layout.Tile = 'east';
-cb.Label.String = 'Surface displacement [\mum]';
-
-
 %% Stochastic OpInf
 
 % max r value
@@ -282,31 +135,44 @@ rmax = 20;
 
 h = double(tt(2) - tt(1));
 [~, L, s] = size(Qstate_all);
-isbilinear = false;
 
 seed_test = 42;
 
 % FOM expectation (average) over all samples
-EFOM = squeeze(mean(Qstate_all, 2)); 
+EFOM = squeeze(mean(Qstate_all, 2));
+% EFOM = squeeze(mean(Qstate_filtered, 2));
 
 % Testing noise sample numbers
 L_test = L * [1];
 % L_test = L * [1, 10, 100, 1000];
 
 
-%%
-BC_1 = EFOM(1,:);
-BC_2 = EFOM(end,:);
-u_train = (BC_1 + BC_2)/2 ;
+%% Filter signals
+% FS_DHM = 115200;
+% fc = 2e3;
+% [high_freq, low_freq] = decompose_LPF(EFOM(100,:), FS_DHM, fc);
+% 
+% figure;
+% plot(tt, low_freq)
+%
 
-figure;
-plot(BC_1, 'DisplayName', '1'); 
-hold on
-plot(BC_2, 'DisplayName', 'end');
-plot(u_train, 'DisplayName', 'u_{input}');
+%% PSD
+% EFOM_traj = squeeze(mean(Qstate_all, 2));
+% 
+% window = hamming(1024);  % segment length
+% noverlap = 512;           % 50% overlap
+% nfft = 1024;              % FFT length
+% 
+% % [pxx, f] = pwelch(EFOM(100,:), window, noverlap, nfft, FS_DHM);
+% [pxx2, f2] = pwelch(EFOM_traj(100,:), window, noverlap, nfft, FS_DHM);
+% 
+% figure; hold on;
+% % plot(f, log10(pxx));
+% plot(f2, log10(pxx2));
+% xlim([10, fc+3000]);
+% xlabel('Frequency (Hz)');
+% ylabel('PSD (dB/Hz)');
 
-legend show
-grid on
 
 %%
 % Test with different number of noise samples
@@ -314,63 +180,75 @@ grid on
 % u_train = (BC_1 + BC_2)/2 ;
 
 f_input = 7e6;
-u_amp = 10;
+u_amp = 1;
 u_train = u_amp*cos(2*pi*f_input*tt);
-figure;
-plot(tt, u_train)
+% figure;
+% plot(tt, u_train)
 
-%%
 
-A_reg = logspace(-1, 2, 10);
-B_reg = logspace(2, 6, 10);
-N_reg = logspace(0, 3, 10);
+%% Test with fixed u_amp, sigma + regularization
 
+A_reg = logspace(-1, 3, 10);
+B_reg = logspace(0, 8, 10);
+N_reg = logspace(0, 5, 10);
+
+r_opt = 8;
+Vr_temp = V(:, 1:r_opt);      % ROM basis
+xr0 = Vr_temp' * EFOM(:,1);   % ROM initial consdtion
+
+Q_train_temp = pagemtimes(Vr_temp', Qstate_all);  % R^{r x L x s}
+E_train = squeeze(mean(Q_train_temp, 2));         % R^{r x s}
+C_train = page_cov(Q_train_temp, true);           % R^{r x r x s}
+    
+isbilinear = true;
+
+if isbilinear
+    outerLoop = 1:length(N_reg);
+    ROM_form = 'non-autonomous bilinear ROM';
+else
+    outerLoop = 1:length(A_reg); 
+    ROM_form = 'non-autonomous linear ROM';
+end
+
+% Initialization
 EROM = cell(1, length(A_reg));
 CROM = cell(1, length(B_reg));
 E_error = zeros(length(A_reg), length(B_reg));
 C_error = zeros(length(A_reg), length(B_reg));
 
-r_opt = 17;
-Vr_temp = V(:, 1:r_opt);
 
-% Project the FOM observations
-Q_train_temp = pagemtimes(Vr_temp', Qstate_all);  % R^{r x L x s}
-
-% Estimate mean/covariance of the reduced observations
-% mean of reduced states across L realizations
-E_train = reshape(squeeze(mean(Q_train_temp, 2)), r_opt, s); % R^{r x s}
-
-% Covariance of reduced states
-C_train = page_cov(Q_train_temp, true); % R^{r x r x s}
-    
-isbilinear = false;
-
-for ii = 1:length(A_reg)
+rng(seed_test)
+for ii = outerLoop
     tic
     disp(ii + "th A_reg")
 
     EROM{ii} = cell(1, length(B_reg));
     CROM{ii} = cell(1, length(B_reg));    
+    
+    % rng(seed_test)
 
     for jj = 1:length(B_reg)
     
-    rng(seed_test)
-    lambda = [A_reg(ii), B_reg(jj), 1];
-    
+    % rng(seed_test)
+
+    if isbilinear
+        lambda = [1, B_reg(jj), N_reg(ii)];
+    else
+        lambda = [A_reg(ii), B_reg(jj), 1];
+    end
+
     % Drift OpInf
-    [Ehatr, Ahatr, Bhatr, Nhatr] = infer_drift_u(E_train, u_train, h, isbilinear, lambda);
-    
+    [Ehatr, Ahatr, Bhatr, Nhatr] = infer_drift_u(E_train, u_train, h, isbilinear, ...
+                                                    lambda);
     % Diffusion OpInf
     [Mhatr, Khatr] = infer_diffusion_u(C_train, u_train, h, Ahatr, Nhatr);
     
-    sigma = 10;
+    sigma = 20;
+    % rng(seed_test)
     % ROM function using Wiener process
     fhatr = @(x0, u, L) ...
             (Ehatr - h*Ahatr - h*Nhatr*u) \ ...
             (x0 + h*Bhatr*u + sqrt(h)*Mhatr*sigma*randn(size(Mhatr,2), L)) ;
-    
-    % ROM initial consdtion
-    xr0 = Vr_temp' * EFOM(:,1);
     
     % ROM simulation w/ testing I.C. across L samples
     % Eopinf: R^{r x s}, Copinf: R^{r x r x s} 
@@ -386,12 +264,420 @@ for ii = 1:length(A_reg)
     C_error(ii,jj) = page_norm(C_train - Copinf) / page_norm(C_train);
     end
     
-    toc
+    fprintf('Elapsed time: %.2f seconds.\n', toc);
 end
 
 error.E_error = E_error;
 error.C_error = C_error;
 
+
+%%
+save(['/disk/hyk049/WT_RomFit/0p07/' ...
+    '0p07vpp_r=8_ABN_amp1_sigma20.mat'], 'EFOM', 'EROM_opt');
+
+
+%% Plot fitted result
+
+[TT, X] = meshgrid(tt, x);
+[i_min, j_min] = find(E_error == min(E_error(:)));
+EROM_opt = EROM{i_min}{j_min};
+
+rel_error = abs(EFOM - EROM_opt) ./ abs(EFOM);
+
+figure('Color','w');
+tile = tiledlayout(2, 3,'Padding','compact','TileSpacing','compact');
+
+% Data containers
+stateData = {EFOM, EROM_opt};
+errorData = rel_error * 100;
+
+% Row 1 (3D view)
+ax = gobjects(1, 6);
+
+ax(1) = nexttile; surf(TT,X,stateData{1},'EdgeColor','none');
+title("Expected dynamics of"+newline+"experimental 1D capillary wave");
+
+ax(2) = nexttile; surf(TT,X,stateData{2},'EdgeColor','none');
+title(sprintf("Expected dynamics of"+newline+"stochastic " +  ROM_form));
+
+ax(3) = nexttile; surf(TT,X,errorData,'EdgeColor','none');
+title("Pointwise relative error (%)");
+
+% Row 2 (Top view)
+ax(4) = nexttile; surf(TT,X,stateData{1},'EdgeColor','none'); view(2);
+ax(5) = nexttile; surf(TT,X,stateData{2},'EdgeColor','none'); view(2);
+ax(6) = nexttile; surf(TT,X,errorData,'EdgeColor','none'); view(2);
+
+% Formatting 
+stateAxes = ax([1 2 4 5]);
+errorAxes = ax([3 6]);
+
+for a = stateAxes
+    xlabel(a,"Time [s]"); ylabel(a,"x [\mum]");
+    zlabel(a,"Surface elevation [\mum]");
+    colormap(a,jet); colorbar(a);
+end
+
+for a = errorAxes
+    xlabel(a,"Time [s]"); ylabel(a,"x [\mum]");
+    zlabel(a,"Relative error (%)");
+    colormap(a,hot); colorbar(a);
+end
+
+%  Shared color limits 
+zmin = min([EFOM(:); EROM_opt(:)]);
+zmax = max([EFOM(:); EROM_opt(:)]);
+
+set(stateAxes,'CLim',[zmin zmax])
+zlim(stateAxes,[zmin zmax])
+
+title(tile, sprintf("$r=%d$", r_opt), 'Interpreter','latex');
+
+%% Plot covariance error progression
+C_error_t = zeros(1,Nt);
+for i=1:Nt
+    C_error_t(i) = norm(C_train(:,:,i) - CROM{i_min}{j_min}(:,:,i), 'fro') ...
+                        / norm(C_train(:,:,i), 'fro');
+end
+
+figure;
+semilogy(tt, C_error_t);
+
+%%
+norm(C_train - CROM{i_min}{j_min}, 'fro') / norm(C_train, 'fro')
+
+
+%% Test with different input amp, noise amplitudes
+
+A_reg = logspace(-1, 3, 10);
+B_reg = logspace(0, 8, 10);
+N_reg = logspace(0, 5, 10);
+
+r_opt = 18;
+Vr_temp = V(:, 1:r_opt);
+
+xr0 = Vr_temp' * EFOM(:,1);  % ROM initial condition
+
+Q_train_temp = pagemtimes(Vr_temp', Qstate_all);  % R^{r x L x s}
+E_train = squeeze(mean(Q_train_temp, 2));         % R^{r x s}
+C_train = page_cov(Q_train_temp, true);           % R^{r x r x s}
+    
+isbilinear = false;
+
+if isbilinear
+    ROM_form = 'non-autonomous bilinear ROM';
+    outerReg = N_reg;
+else
+    ROM_form = 'non-autonomous linear ROM';
+    outerReg = A_reg;
+end
+
+f_input = 7e6;
+u_amp = [1, 10, 100];
+
+sigma = [1, 5, 10, 15, 20, 30];
+
+E_error_all = cell(length(u_amp), 1);
+C_error_all = cell(length(u_amp), 1);
+E_opinf_all = cell(length(u_amp), 1);
+
+
+for i_u = 1:length(u_amp)
+
+u_train = u_amp(i_u)*cos(2*pi*f_input*tt);
+
+E_error_all{i_u} = zeros(length(outerReg), length(B_reg), length(sigma));
+C_error_all{i_u} = zeros(length(outerReg), length(B_reg), length(sigma));
+E_opinf_all{i_u} = cell(length(outerReg), 1);
+
+rng(seed_test)
+tic
+for ii = 1:length(outerReg)
+    % rng(seed_test)
+    disp(ii + "th outer reg")
+
+    E_opinf_all{i_u}{ii} = cell(length(B_reg), 1);
+
+    for jj = 1:length(B_reg)
+
+        E_opinf_all{i_u}{ii}{jj} = zeros(r_opt, s, length(sigma));
+    
+        if isbilinear
+            lambda = [1, B_reg(jj), N_reg(ii)];
+        else
+            lambda = [A_reg(ii), B_reg(jj), 1];
+        end
+
+        % Drift OpInf
+        [Ehatr, Ahatr, Bhatr, Nhatr] = infer_drift_u(E_train, u_train, h, ...
+                                                        isbilinear, lambda);
+        % Diffusion OpInf
+        [Mhatr, Khatr] = infer_diffusion_u(C_train, u_train, h, Ahatr, Nhatr);
+
+        % Loop over noise amplitudes
+        for i_sig = 1:length(sigma)
+            
+            fhatr = @(x0, u, L) ...
+                    (Ehatr - h*Ahatr - h*Nhatr*u) \ ...
+                    (x0 + h*Bhatr*u + sqrt(h)*Mhatr*sigma(i_sig)*randn(size(Mhatr,2), L)) ;
+            
+            [Eopinf, Copinf] = compute_model_u(fhatr, Vr_temp, xr0, u_train, L, L);
+            
+            E_error_all{i_u}(ii, jj, i_sig) = norm(E_train - Eopinf, 'fro') / norm(E_train, 'fro');
+            % C_error_all{i_u}(ii,jj, i_sig) = page_norm(C_train - Copinf) / page_norm(C_train);
+            
+            E_opinf_all{i_u}{ii}{jj}(:,:, i_sig) = Eopinf;
+        end 
+    end
+end
+toc
+
+end
+
+
+
+%%
+EROM_amp = cell(length(u_amp), 1);
+
+for i_u = 1:length(u_amp)
+    EROM_amp{i_u} = cell(length(sigma), 1);
+    for i_sig = 1:length(sigma)
+        E_error_sig = E_error_all{i_u}(:,:,i_sig);
+        [i_min, j_min] = find(E_error_sig == min(E_error_sig(:)));
+        E_opinf_min = E_opinf_all{i_u}{i_min}{j_min}(:,:,i_sig);
+    
+        Erecon = Vr_temp * E_opinf_min;
+        EROM_amp{i_u}{i_sig} = Erecon;
+    end
+end
+
+
+%% Save all ROMs
+amps   = {'amp1', 'amp10', 'amp100'};
+sigmas = {'sigma1', 'sigma5', 'sigma10', 'sigma15', 'sigma20', 'sigma30'};
+
+for i = 1:length(amps)
+    for j = 1:length(sigmas)
+        EROM_all.(amps{i}).(sigmas{j}) = EROM_amp{i}{j};
+    end
+end
+
+
+%%
+EROM_opt = EROM_all.amp10.sigma10;
+
+save(['/disk/hyk049/WT_RomFit/0p20/' ...
+    '0p20vpp_r=18_ABN_amp10_sigma10_fc_1e3.mat'], 'EFOM', 'EROM_opt');
+
+
+%% Plot all 
+[TT, X] = meshgrid(tt, x);
+
+EROM1  = EROM_all.amp100.sigma1;
+EROM10 = EROM_all.amp100.sigma10;
+EROM15 = EROM_all.amp100.sigma15;
+EROM20 = EROM_all.amp100.sigma20;
+
+rel1  = abs(EFOM - EROM1)  ./ abs(EFOM);
+rel10 = abs(EFOM - EROM10) ./ abs(EFOM);
+rel15 = abs(EFOM - EROM15) ./ abs(EFOM);
+rel20 = abs(EFOM - EROM20) ./ abs(EFOM);
+
+figure('Color','w');
+tile = tiledlayout(6, 4,'Padding','compact','TileSpacing','compact');
+
+% Row1 FOM 3D
+ax1 = nexttile(1);  surf(TT,X,EFOM,'EdgeColor','none');  title("Expected dynamics of" ...
+                                + newline + "experimental 1D capillary wave");
+% Row2 FOM top view
+ax5 = nexttile(5);  surf(TT,X,EFOM,'EdgeColor','none');  view(2);
+
+% Row3 ROM 3D
+ax9 = nexttile(9);  surf(TT,X,EROM1,'EdgeColor','none'); 
+title(ax9, sprintf('stochastic %s\n(\\sigma = 1)', ROM_form));
+
+ax10 = nexttile(10); surf(TT,X,EROM10,'EdgeColor','none');
+title(ax10, sprintf('stochastic %s\n(\\sigma = 10)', ROM_form));
+
+ax11 = nexttile(11); surf(TT,X,EROM15,'EdgeColor','none');
+title(ax11, sprintf('stochastic %s\n(\\sigma = 15)', ROM_form));
+
+ax12 = nexttile(12); surf(TT,X,EROM20,'EdgeColor','none'); 
+title(ax12, sprintf('stochastic %s\n(\\sigma = 20)', ROM_form));
+
+% Row4 ROM top view
+ax13 = nexttile(13);  surf(TT,X,EROM1,'EdgeColor','none'); view(2);
+ax14 = nexttile(14);  surf(TT,X,EROM10,'EdgeColor','none'); view(2);
+ax15 = nexttile(15);  surf(TT,X,EROM15,'EdgeColor','none'); view(2);
+ax16 = nexttile(16);  surf(TT,X,EROM20,'EdgeColor','none'); view(2);
+
+% Row5 error 3D
+ax17 = nexttile(17);  surf(TT,X,rel1*100,'EdgeColor','none'); title("Pointwise relative" + ...
+                                                            "error (%)");
+ax18 = nexttile(18);  surf(TT,X,rel10*100,'EdgeColor','none'); title("Pointwise relative" + ...
+                                                            "error (%)");
+ax19 = nexttile(19);  surf(TT,X,rel15*100,'EdgeColor','none'); title("Pointwise relative" + ...
+                                                            "error (%)");
+ax20 = nexttile(20);  surf(TT,X,rel20*100,'EdgeColor','none'); title("Pointwise relative" + ...
+                                                            "error (%)");
+% Row6 error top view
+ax21 = nexttile(21); surf(TT,X,rel1*100,'EdgeColor','none'); view(2);
+ax22 = nexttile(22); surf(TT,X,rel10*100,'EdgeColor','none'); view(2);
+ax23 = nexttile(23); surf(TT,X,rel15*100,'EdgeColor','none'); view(2);
+ax24 = nexttile(24); surf(TT,X,rel20*100,'EdgeColor','none'); view(2);
+
+% ===== Formatting (applied once) =====
+allSurfAxes = [ax1 ax5 ax9 ax10 ax11 ax12 ax13 ax14 ax15 ax16];
+allErrAxes  = [ax17 ax18 ax19 ax20 ax21 ax22 ax23 ax24];
+
+for ax = allSurfAxes
+    xlabel(ax,"Time [s]");
+    ylabel(ax,"x [\mum]");
+    colormap(ax,jet);
+    colorbar(ax);
+end
+
+for ax = allErrAxes
+    xlabel(ax,"Time [s]");
+    ylabel(ax,"x [\mum]");
+    colormap(ax,hot);
+    colorbar(ax);
+end
+
+% Shared color limits for state plots
+zmin = min([EFOM(:); EROM1(:); EROM10(:); EROM15(:); EROM20(:)]);
+zmax = max([EFOM(:); EROM1(:); EROM10(:); EROM15(:); EROM20(:)]);
+
+set(allSurfAxes,'CLim',[zmin zmax])
+zlim(allSurfAxes,[zmin zmax])
+
+% Shared error values
+err_min = 0;
+err_max = max([rel1(:); rel10(:); rel15(:); rel20(:)]) * 100;
+
+set(allErrAxes,'CLim',[err_min err_max])
+zlim(allErrAxes,[err_min err_max])
+
+title(tile, sprintf("$r=%d$", r_opt), 'Interpreter','latex');
+
+
+
+%% Test different input amplitude & norms of Ar, Br
+f_input = 7e6;
+u_amp = [1e-2, 1e-1, 1e0, 1e1, 1e2, 1e3];
+% u_train = u_amp*cos(2*pi*f_input*tt);
+
+A_reg = logspace(-1, 3, 10);
+B_reg = logspace(2, 6, 10);
+
+A_norm_min = zeros(length(u_amp), 1);
+B_norm_min = zeros(length(u_amp), 1);
+EROM = cell(1, length(u_amp));
+CROM = cell(1, length(u_amp));
+
+E_error_min = zeros(length(u_amp), 1);
+
+r_opt = 19;
+Vr_temp = V(:, 1:r_opt);
+
+Q_train_temp = pagemtimes(Vr_temp', Qstate_all);              % R^{r x L x s}
+E_train = reshape(squeeze(mean(Q_train_temp, 2)), r_opt, s);  % R^{r x s}
+C_train = page_cov(Q_train_temp, true);                       % R^{r x r x s}
+    
+isbilinear = false;
+
+for i_u = 1:length(u_amp)
+
+E_error = zeros(length(A_reg), length(B_reg));
+C_error = zeros(length(A_reg), length(B_reg));
+A_norm  = zeros(length(A_reg), length(B_reg));
+B_norm  = zeros(length(A_reg), length(B_reg));
+
+E_opinf_all = cell(1, length(A_reg));
+
+tic
+for ii = 1:length(A_reg)
+    disp(ii + "th A_reg")  
+
+    E_opinf_all{ii} = cell(1, length(B_reg));
+
+    for jj = 1:length(B_reg)
+    
+    rng(seed_test)
+    lambda = [A_reg(ii), B_reg(jj), 1];
+
+    uu = u_amp(i_u)*cos(2*pi*f_input*tt);
+    
+    % Drift OpInf
+    [Ehatr, Ahatr, Bhatr, Nhatr] = infer_drift_u(E_train, uu, h, isbilinear, lambda);
+    
+    % Diffusion OpInf
+    [Mhatr, Khatr] = infer_diffusion_u(C_train, uu, h, Ahatr, Nhatr);
+
+    A_norm(ii,jj) = norm(Ahatr);
+    B_norm(ii,jj) = norm(Bhatr);
+    
+    sigma = 1;
+    % ROM function using Wiener process
+    fhatr = @(x0, u, L) ...
+            (Ehatr - h*Ahatr - h*Nhatr*u) \ ...
+            (x0 + h*Bhatr*u + sqrt(h)*Mhatr*sigma*randn(size(Mhatr,2), L)) ;
+    
+    % ROM initial consdtion
+    xr0 = Vr_temp' * EFOM(:,1);
+    
+    % ROM simulation w/ testing I.C. across L samples
+    % Eopinf: R^{r x s}, Copinf: R^{r x r x s} 
+    [Eopinf, Copinf] = compute_model_u(fhatr, Vr_temp, xr0, u_train, L, L);
+    
+    E_opinf_all{ii}{jj} = Eopinf;
+    
+    E_error(ii,jj) = norm(E_train - Eopinf, 'fro') / norm(E_train, 'fro');
+    C_error(ii,jj) = page_norm(C_train - Copinf) / page_norm(C_train);
+    end
+end
+toc
+
+[i_min, j_min] = find(E_error == min(E_error(:)));
+EROM{i_u} = Vr_temp * E_opinf_all{i_min}{j_min};
+
+E_error_min(i_u) = E_error(i_min, j_min); 
+A_norm_min(i_u) = A_norm(9, 1);
+B_norm_min(i_u) = B_norm(9, 1);
+
+end
+
+%%
+figure('color', 'w'); hold on;
+
+% Left y-axis
+yyaxis left
+h1 = scatter(u_amp, A_norm_min, 50, 'o');
+hold on
+h2 = scatter(u_amp, B_norm_min, 70, '*');
+ylabel('Learned reduced operator norms')
+
+% Right y-axis
+yyaxis right
+h3 = scatter(u_amp, E_error_min, '^');
+ylabel('Expectation error')
+
+% Log scales
+set(gca, 'XScale', 'log')
+yyaxis left
+set(gca, 'YScale', 'log')
+yyaxis right
+set(gca, 'YScale', 'log')
+
+xlabel('$\overline{u}$', 'Interpreter', 'latex', 'FontSize', 15)
+
+lgd = legend([h1 h2 h3], ...
+       {'$\|\widehat{A}_r\|_F$', '$\|\widehat{B}_r\|_F$', '$E_{error}$'}, ...
+       'Interpreter', 'latex', ...
+       'Location', 'best');
+
+lgd.FontSize = 15;
+grid on;
 
 
 %%
@@ -402,7 +688,8 @@ save(['/disk/hyk049/WT_RomFit/0p25/' ...
 %%
 [TT, X] = meshgrid(tt, x);
 
-EROM_opt = EROM{9}{5};
+% EROM_opt = EROM{9}{5};
+EROM_opt = EROM{6};
 
 figure('Color', 'w');
 tile = tiledlayout(2, 3, 'Padding','compact','TileSpacing','compact');
@@ -476,318 +763,93 @@ zlim(ax5, [zmin zmax])
 
 
 
-%%
-% Test with different number of noise samples
-
-u_train = (BC_1 + BC_2)/2 ;
-
-for j=1:length(L_test)
-
-    EROM{j} = cell(1,rmax); CROM{j} = cell(1,rmax);    
-    E_error{j} = zeros(1,rmax); C_error{j} = zeros(1,rmax);
-
-    tic
-    for ii = 1:rmax
-        disp("ROM dimension " + ii)
-        rng(seed_test)
-    
-        Vr_temp = V(:, 1:ii);
-    
-        % Project the FOM observations
-        Q_train_temp = pagemtimes(Vr_temp', Qstate_all);  % R^{r x L x s}
-    
-        % Estimate mean/covariance of the reduced observations
-        % mean of reduced states across L realizations
-        E_train = reshape(squeeze(mean(Q_train_temp, 2)), ii, s); % R^{r x s}
-    
-        % Covariance of reduced states
-        C_train = page_cov(Q_train_temp, true); % R^{r x r x s}
-    
-        isbilinear = false;
-        lambda = [1, 1e3];
-        % Drift OpInf
-        [Ehatr, Ahatr, Bhatr, Nhatr] = infer_drift_u(E_train, u_train, h, isbilinear, lambda);
-    
-        % Diffusion OpInf
-        [Mhatr, Khatr] = infer_diffusion_u(C_train, u_train, h, Ahatr, Nhatr);
-    
-        sigma = 1;
-        % ROM function using Wiener process
-        fhatr = @(x0, u, L) ...
-            (Ehatr - h*Ahatr - h*Nhatr*u) \ ...
-            (x0 + h*Bhatr*u + sqrt(h)*Mhatr*sigma*randn(size(Mhatr,2), L)) ;
-
-        % fhatr = @(x0, L) ...
-        %     (Ehatr - h*Ahatr) \ ...
-        %     (x0 + sqrt(h)*Mhatr*sigma*randn(size(Mhatr,2), L)) ;
-    
-        % ROM initial consdtion
-        xr0 = Vr_temp' * EFOM(:,1);
-    
-        % ROM simulation w/ testing I.C.
-        % This simulates ROM across L samples
-        % Eopinf: R^{r x s}, Copinf: R^{r x r x s} 
-        [Eopinf, Copinf] = compute_model_u(fhatr, Vr_temp, ...
-                                            xr0, u_train, L, L_test(j));
-        % Reconstruct FOM dimension
-        E_recon = Vr_temp * Eopinf;  % R^{n x s}
-    
-        % Vr*C*Vr^T (R^{n x n x s})
-        % C_recon = pagemtimes( pagemtimes(Vr_temp, Copinf), Vr_temp' );
-     
-        EROM{j}{ii} = E_recon;
-        CROM{j}{ii} = Copinf;
-    
-        E_error{j}(ii) = norm(E_train - Eopinf, 'fro') / norm(E_train, 'fro');
-        C_error{j}(ii) = page_norm(C_train - Copinf) / page_norm(C_train);
-    end
-    toc
-
-end
-
-error.E_error = E_error;
-error.C_error = C_error;
-
-%% plot errors
-r = linspace(1, rmax, rmax);
-
-figure('Color', 'w');
-
-for j=1:length(L_test)
-% expectation
-subplot(1,2,1)
-plot(r, error.E_error{j}, '-o', 'linewidth', 1.5, ...
-    'MarkerFaceColor','auto'); hold on;
-set(gca, 'YScale', 'log')
-xlabel("Reduced dimension $r$", 'interpreter', 'latex')
-ylabel("$e_E$", 'interpreter', 'latex')
-title("Expectation error")
-% axis([1 rmax min(error.E_error)*0.9 max(error.E_error)*1.1])
-grid on
-
-% Covariance
-subplot(1,2,2)
-plot(r, error.C_error{j}, '-o', 'LineWidth', 1.5, ...
-    'MarkerFaceColor','auto'); hold on;
-set(gca, 'YScale', 'log')
-xlabel("Reduced dimension $r$", 'interpreter', 'latex')
-ylabel("$e_C$", 'interpreter', 'latex')
-title("Covariance error")
-% axis([1 rmax min(error.C_error)*0.9 max(error.C_error)*1.1])
-grid on
-
-legend(sprintf("L=%d", L_test(1)), sprintf("L=%d", L_test(2)));
-
-end
 
 
-%%
-[TT, X] = meshgrid(tt, x);
 
-r_opt = 13;
-EROM_opt = EROM{1}{r_opt};
+%% 3 regularization
 
-figure('Color','w');
-tile = tiledlayout(2, 3, 'Padding','compact','TileSpacing','compact');
+A_reg = logspace(-1, 3, 5);
+B_reg = logspace(0, 8, 10);
+N_reg = logspace(0, 5, 10);
 
-% Subplot 1: FOM expectation
-ax1 = nexttile;
-s1 = surf(ax1, TT, X, EFOM, 'EdgeColor','none');
-title(ax1,"Expected dynamics of" + newline + "experimental 1D capillary wave" ...
-       + newline + "(L=170)");
-xlabel(ax1,"Time [s]"); ylabel(ax1,"x [\mum]");
-zlabel(ax1,"Surface elevation [\mum]");
-% xlim(ax1,[0,0.06]); xticks(ax1,0:0.01:0.05);
-colorbar(ax1); colormap(ax1, jet);
+r_opt = 14;
+Vr_temp = V(:, 1:r_opt);
 
-% Subplot 2: Stochastic OpInf ROM expectation
-ax2 = nexttile;
-s2 = surf(ax2, TT, X, EROM_opt, 'EdgeColor', 'none');
-title(ax2,"Expected dynamics of" + newline + "stochastic OpInf ROM fitting" ...
-      + newline + "(L=170,000)");
-xlabel(ax2,"Time [s]"); ylabel(ax2,"x [\mum]");
-zlabel(ax2,"Surface elevation [\mum]");
-% xlim(ax2,[0,0.06]); xticks(ax2,0:0.01:0.05);
-colorbar(ax2); colormap(ax2, jet);
+xr0 = Vr_temp' * EFOM(:,1);  % ROM initial condition
 
-
-% Subplot 3: Pointwise relative error (%)
-rel_error = abs(EFOM - EROM_opt)./abs(EFOM);
-
-ax3 = nexttile;
-s3 = surf(ax3, TT, X, rel_error*100, 'EdgeColor', 'none');
-title(ax3,"Pointwise relative error (%)");
-xlabel(ax3,"Time [s]"); ylabel(ax3,"x [\mum]");
-zlabel(ax3,"Relative error (%)");
-% xlim(ax3,[0,0.06]); xticks(ax3,0:0.01:0.05);
-colorbar(ax3); colormap(ax3, hot);
-
-ax4 = nexttile;
-s4 = surf(ax4, TT, X, EFOM, 'EdgeColor','none');
-view(ax4,2)
-xlabel(ax4,"Time [s]"); ylabel(ax4,"x [\mum]");
-zlabel(ax4,"Surface elevation [\mum]");
-% xlim(ax4,[0,0.06]); xticks(ax4,0:0.01:0.05);
-colorbar(ax4); colormap(ax4, jet);
-
-ax5 = nexttile;
-s5 = surf(ax5, TT, X, EROM_opt, 'EdgeColor', 'none');
-view(ax5,2)
-xlabel(ax5,"Time [s]"); ylabel(ax5,"x [\mum]");
-zlabel(ax5,"Surface elevation [\mum]");
-% xlim(ax5,[0,0.06]); xticks(ax5,0:0.01:0.05);
-colorbar(ax5); colormap(ax5, jet);
-
-ax6 = nexttile;
-s6 = surf(ax6, TT, X, rel_error*100, 'EdgeColor', 'none');
-view(ax6,2)
-xlabel(ax6, "Time [s]"); ylabel(ax6,"x [\mum]");
-zlabel(ax6,"Relative error (%)");
-% xlim(ax6,[0,0.06]); xticks(ax6,0:0.01:0.05);
-colorbar(ax6); colormap(ax6, hot);
-
-title(tile, sprintf("$r=%d$", r_opt), 'interpreter', 'latex');
-
-zmin = min([s1.ZData(:); s2.ZData(:); s4.ZData(:); s5.ZData(:)]);
-zmax = max([s1.ZData(:); s2.ZData(:); s4.ZData(:); s5.ZData(:)]);
-set([ax1 ax2 ax4 ax5], 'CLim', [zmin zmax])
-
-zlim(ax1, [zmin zmax])
-zlim(ax2, [zmin zmax])
-zlim(ax4, [zmin zmax])
-zlim(ax5, [zmin zmax])
-
-
-%%
-LL = 170000;  % testing # of noise samples
-rr = 18;
-Vr_temp = V(:, 1:rr);
-
-h = double(tt(2) - tt(1));
-[~, L, s] = size(Qstate_all);
-isbilinear = false;
-
-% FOM expectation (average) over all samples
-EFOM = squeeze(mean(Qstate_all, 2)); 
-
-seed_test = 42;
-rng(seed_test);
-
-% Project the FOM observations
 Q_train_temp = pagemtimes(Vr_temp', Qstate_all);  % R^{r x L x s}
+E_train = squeeze(mean(Q_train_temp, 2));         % R^{r x s}
+C_train = page_cov(Q_train_temp, true);           % R^{r x r x s}
 
-% Estimate mean/covariance of the reduced observations
-% mean of reduced states across L realizations
-E_train = reshape(squeeze(mean(Q_train_temp, 2)), rr, s); % R^{r x s}
+isbilinear = true;
 
-% Covariance of reduced states
-C_train = page_cov(Q_train_temp, true); % R^{r x r}
+if isbilinear
+    ROM_form = 'non-autonomous linear+bilinear ROM';
+else
+    ROM_form = 'non-autonomous linear ROM';
+end
 
-% Drift OpInf
-[Ehatr, Ahatr, Nhatr] = infer_drift(E_train, h, isbilinear, s);
+f_input = 7e6;
+u_amp = [1, 10, 100];
 
-% Diffusion OpInf
-[Mhatr, Khatr] = infer_diffusion(C_train, h, Ahatr, Nhatr);
+sigma = [1, 5, 10, 15, 20, 30];
 
-sigma = 5;
-% ROM function using Wiener process
-fhatr = @(x0, L) (Ehatr - h*Ahatr) \ ...
-                    (x0 + sqrt(h)*Mhatr*sigma*randn(size(Mhatr,2), L)) ;
+E_error_all = cell(length(u_amp), 1);
+C_error_all = cell(length(u_amp), 1);
+E_opinf_all = cell(length(u_amp), 1);
 
-% ROM initial consdtion
-xr0 = Vr_temp' * EFOM(:,1);
+rng(seed_test)
+for i_u = 1:length(u_amp)
 
-% ROM simulation w/ testing I.C.
-% This simulates ROM across L samples
-% Eopinf: R^{r x s}, Copinf: R^{r x r x s}
-[Eopinf, Copinf, f1opinf, f2opinf] = compute_model(fhatr, Vr_temp, xr0, ...
-                                                    s, L, LL);
-% Reconstruct FOM dimension
-E_recon = Vr_temp * Eopinf;  % R^{n x s}
+u_train = u_amp(i_u)*cos(2*pi*f_input*tt);
 
-% Vr*C*Vr^T (R^{n x n x s})
-C_recon = pagemtimes( pagemtimes(Vr_temp, Copinf), Vr_temp' );
+E_error_all{i_u} = zeros(length(A_reg), length(B_reg), length(N_reg), length(sigma));
+C_error_all{i_u} = zeros(length(A_reg), length(B_reg), length(N_reg), length(sigma));
+E_opinf_all{i_u} = cell(length(A_reg), 1);
 
+tic
+for ii = 1:length(A_reg)
+    disp(ii + "th A_reg-------------------")
 
-%%
-save(['/data/home/hyk049/Wave_Turbulence/' ...
-    '0p15vpp_stoc_opinf_10datasets_input.mat'], 'EFOM', 'EROM_opt');
+    E_opinf_all{i_u}{ii} = cell(length(B_reg), 1);
 
+    for jj = 1:length(B_reg)
+        disp(jj + "th B_reg--------")
+        E_opinf_all{i_u}{ii}{jj} = cell(length(N_reg), 1);
 
-%%
-EROM_opt = E_recon;
+        for kk = 1:length(N_reg)
+            disp(kk + "th N_reg")
 
-[TT, X] = meshgrid(tt, x);
+            E_opinf_all{i_u}{ii}{jj}{kk} = zeros(r_opt, s, length(sigma));
+    
+            lambda = [A_reg(ii), B_reg(jj), N_reg(kk)];
 
-figure('Color','w');
-tile = tiledlayout(2, 3, 'Padding','compact','TileSpacing','compact');
+            % Drift OpInf
+            [Ehatr, Ahatr, Bhatr, Nhatr] = infer_drift_u(E_train, u_train, h, ...
+                                                            isbilinear, lambda);
+            % Diffusion OpInf
+            [Mhatr, Khatr] = infer_diffusion_u(C_train, u_train, h, Ahatr, Nhatr);
 
-% Subplot 1: FOM expectation
-ax1 = nexttile;
-s1 = surf(ax1, TT, X, EFOM, 'EdgeColor','none');
-title(ax1,"Expected dynamics of" + newline + "experimental 1D capillary wave" ...
-       + newline + "(L=170)");
-xlabel(ax1,"Time [s]"); ylabel(ax1,"x [\mum]");
-zlabel(ax1,"Surface elevation [\mum]");
-% xlim(ax1,[0,0.06]); xticks(ax1,0:0.01:0.05);
-colorbar(ax1); colormap(ax1, jet);
+            % Loop over noise amplitudes
+            for i_sig = 1:length(sigma)
+    
+                fhatr = @(x0, u, L) ...
+                        (Ehatr - h*Ahatr - h*Nhatr*u) \ ...
+                        (x0 + h*Bhatr*u + sqrt(h)*Mhatr*sigma(i_sig)*randn(size(Mhatr,2), L)) ;
+                
+                [Eopinf, Copinf] = compute_model_u(fhatr, Vr_temp, xr0, u_train, L, L);
+                
+                E_error_all{i_u}(ii, jj, kk, i_sig) = norm(E_train - Eopinf, 'fro') / norm(E_train, 'fro');
+                % C_error_all{i_u}(ii,jj, i_sig) = page_norm(C_train - Copinf) / page_norm(C_train);
+                
+                E_opinf_all{i_u}{ii}{jj}{kk}(:,:, i_sig) = Eopinf;
+            end 
+        end
+    end
+end
+toc
 
-% Subplot 2: Stochastic OpInf ROM expectation
-ax2 = nexttile;
-s2 = surf(ax2, TT, X, EROM_opt, 'EdgeColor', 'none');
-title(ax2,"Expected dynamics of" + newline + "stochastic OpInf ROM fitting" ...
-      + newline + "(L=170,000)");
-xlabel(ax2,"Time [s]"); ylabel(ax2,"x [\mum]");
-zlabel(ax2,"Surface elevation [\mum]");
-% xlim(ax2,[0,0.06]); xticks(ax2,0:0.01:0.05);
-colorbar(ax2); colormap(ax2, jet);
-
-
-% Subplot 3: Pointwise relative error (%)
-rel_error = abs(EFOM - EROM_opt)./abs(EFOM);
-
-ax3 = nexttile;
-s3 = surf(ax3, TT, X, rel_error*100, 'EdgeColor', 'none');
-title(ax3,"Pointwise relative error (%)");
-xlabel(ax3,"Time [s]"); ylabel(ax3,"x [\mum]");
-zlabel(ax3,"Relative error (%)");
-% xlim(ax3,[0,0.06]); xticks(ax3,0:0.01:0.05);
-colorbar(ax3); colormap(ax3, hot);
-
-ax4 = nexttile;
-s4 = surf(ax4, TT, X, EFOM, 'EdgeColor','none');
-view(ax4,2)
-xlabel(ax4,"Time [s]"); ylabel(ax4,"x [\mum]");
-zlabel(ax4,"Surface elevation [\mum]");
-% xlim(ax4,[0,0.06]); xticks(ax4,0:0.01:0.05);
-colorbar(ax4); colormap(ax4, jet);
-
-ax5 = nexttile;
-s5 = surf(ax5, TT, X, EROM_opt, 'EdgeColor', 'none');
-view(ax5,2)
-xlabel(ax5,"Time [s]"); ylabel(ax5,"x [\mum]");
-zlabel(ax5,"Surface elevation [\mum]");
-% xlim(ax5,[0,0.06]); xticks(ax5,0:0.01:0.05);
-colorbar(ax5); colormap(ax5, jet);
-
-ax6 = nexttile;
-s6 = surf(ax6, TT, X, rel_error*100, 'EdgeColor', 'none');
-view(ax6,2)
-xlabel(ax6, "Time [s]"); ylabel(ax6,"x [\mum]");
-zlabel(ax6,"Relative error (%)");
-% xlim(ax6,[0,0.06]); xticks(ax6,0:0.01:0.05);
-colorbar(ax6); colormap(ax6, hot);
-
-title(tile, sprintf("$r=%d$", rr), 'interpreter', 'latex');
-
-zmin = min([s1.ZData(:); s2.ZData(:); s4.ZData(:); s5.ZData(:)]);
-zmax = max([s1.ZData(:); s2.ZData(:); s4.ZData(:); s5.ZData(:)]);
-set([ax1 ax2 ax4 ax5], 'CLim', [zmin zmax])
-
-zlim(ax1, [zmin zmax])
-zlim(ax2, [zmin zmax])
-zlim(ax4, [zmin zmax])
-zlim(ax5, [zmin zmax])
+end
 
 
 
@@ -795,4 +857,15 @@ zlim(ax5, [zmin zmax])
 function y = page_norm(A)
     y = sum(abs(A).^2, 'all');
     y = sqrt(y);
+end
+
+function [stationary, drift] = decompose_LPF(x, fs, fc)
+    % 3rd-order Butterworth low-pass filter
+    [b, a] = butter(3, fc/(fs/2), 'low');
+    
+    % Zero-phase filtering (filtfilt)
+    drift = filtfilt(b, a, x);
+    
+    % Stationary = original - drift
+    stationary = x - drift;
 end

@@ -44,7 +44,7 @@ else
     rhs = Er_dot(:,1:K);
 end
 
-fprintf("cond(D) = %.4e\n", cond(D))
+% fprintf("cond(D) = %.4e\n", cond(D))
 
 % Solve least-squares problem
 if exist('lambda', 'var')
